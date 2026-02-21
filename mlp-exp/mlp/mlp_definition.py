@@ -26,8 +26,18 @@ class FinalSpatialMLP(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 1)
         )
+        self.activations = {}
 
-    def forward(self, grid, coords_one_hot):
+    def forward(self, grid, coords_one_hot, return_activations=False):
+
         g = self.grid_net(grid)
         c = self.coord_net(coords_one_hot)
-        return self.output_head(g * c)
+        
+        # This is the "interconnected" representation you want to probe
+        acts = g * c 
+        self.activations['layer2'] = acts  # Store for later harvesting
+        out = self.output_head(acts)
+        
+        if return_activations:
+            return out, acts
+        return out
