@@ -1,70 +1,112 @@
-import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from dataset.data_loader import load_excel_to_dataloader
+from mlp.mlp_definition import InterpretabilityMLP
 
-# import torch.nn.functional as F
-# import numpy as np
-# import random
+# --- 3. Training Script ---
+def train_model():
+    model = InterpretabilityMLP()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.MSELoss()
 
-from mlp.mlp_definition import FinalSpatialMLP
-from dataset.data_generator import OneHotSpatialDataset
-from torch.utils.data import Dataset, DataLoader
+    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx")
+    val_loader = load_excel_to_dataloader("dataset/mlp_val.xlsx")
 
-# --- TRAINING ---
-def train():
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    train_loader = DataLoader(OneHotSpatialDataset(pt_path="dataset/train_data.pt"), batch_size=512, shuffle=True)
-    val_loader = DataLoader(OneHotSpatialDataset(pt_path="dataset/test_data.pt"), batch_size=512)
-
-    model = FinalSpatialMLP().to(DEVICE)
-    optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
-    
-    print(f"Training with One-Hot Coordinates on {DEVICE}...")
-
-    best_v_loss = float('inf')
-
-    for epoch in range(100):
+    for epoch in range(250):
         model.train()
-        for g, c, y in train_loader:
-            g, c, y = g.to(DEVICE), c.to(DEVICE), y.to(DEVICE)
-            optimizer.zero_grad(set_to_none=True)
-            loss = nn.MSELoss()(model(g, c), y)
+        for batch_x, batch_y in train_loader:
+            optimizer.zero_grad()
+            preds = model(batch_x)
+            loss = criterion(preds, batch_y)
             loss.backward()
             optimizer.step()
-
-        model.eval()
-        v_loss = sum(nn.MSELoss()(model(g.to(DEVICE), c.to(DEVICE)), y.to(DEVICE)).item() for g, c, y in val_loader) / len(val_loader)
-        scheduler.step(v_loss)
-
-        # Track the best model
-        if v_loss < best_v_loss:
-            best_v_loss = v_loss
-            # Save the weights to a file
-            save_path = "mlp/final_spatial_model.pth"
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            torch.save(model.state_dict(), save_path)
-            status = "★ Saved"
-        else:
-            status = ""
-
-        if (epoch + 1) % 10 == 0 or status:
-            print(f"Epoch {epoch+1:03d} | Val MSE: {v_loss:.6f} {status}")
         
-        if v_loss < 0.005: # Sharpened convergence criteria
-            print("Converged!")
-            break
+        # Simple Validation
+        model.eval()
+        with torch.no_grad():
+            val_loss = sum(criterion(model(bx), by) for bx, by in val_loader) / len(val_loader)
+            print(f"Epoch {epoch+1} | Val Loss: {val_loss:.4f}")
 
-    # Verification
+    torch.save(model.state_dict(), "mlp/trained_mlp.pth")
+    return model
+
+# --- 3. Training & Testing Script ---
+def train_and_test_model():
+    model = InterpretabilityMLP()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.MSELoss()
+
+    # Load all three sets
+    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx")
+    val_loader   = load_excel_to_dataloader("dataset/mlp_val.xlsx")
+    test_loader  = load_excel_to_dataloader("dataset/mlp_test.xlsx")
+
+    # --- Training Loop ---
+    for epoch in range(250):
+        model.train()
+        for batch_x, batch_y in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(model(batch_x), batch_y)
+            loss.backward()
+            optimizer.step()
+        
+        # Validation Check
+        model.eval()
+        with torch.no_grad():
+            v_loss = sum(criterion(model(bx), by) for bx, by in val_loader) / len(val_loader)
+            print(f"Epoch {epoch+1} | Val MSE: {v_loss:.4f}")
+
+    # --- FINAL TEST STEP ---
     model.eval()
-    print("\nFinal Precise Results:")
-    test_loader = DataLoader(OneHotSpatialDataset(5), batch_size=1)
-    for g, c, y in test_loader:
-        pred = model(g.to(DEVICE), c.to(DEVICE))
-        print(f"Actual: {y.item():.0f} | Prediction: {pred.item():.4f}")
+    test_loss = 0
+    with torch.no_grad():
+        for bx, by in test_loader:
+            preds = model(bx)
+            test_loss += criterion(preds, by).item()
+    
+    avg_test_loss = test_loss / len(test_loader)
+    print("\n--- Final Results ---")
+    print(f"Final Test MSE: {avg_test_loss:.4f}")
+    
+    # Save the model
+    torch.save(model.state_dict(), "mlp/trained_mlp.pth")
+    return model
 
-    print(f"\nModel saved successfully to: {save_path}")
+def train_to_perfection():
+    model = InterpretabilityMLP()
+    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx", batch_size=64)
+    val_loader = load_excel_to_dataloader("dataset/mlp_val.xlsx", batch_size=64)
+
+    epochs = 500 # Pushing further for total convergence
+    optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    
+    # OneCycleLR helps "jump" into the correct indexing logic
+    scheduler = optim.lr_scheduler.OneCycleLR(
+        optimizer, max_lr=1e-2, 
+        steps_per_epoch=len(train_loader), 
+        epochs=epochs
+    )
+    
+    criterion = nn.MSELoss()
+
+    for epoch in range(epochs):
+        model.train()
+        for batch_x, batch_y in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(model(batch_x), batch_y)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+        
+        if (epoch + 1) % 50 == 0:
+            model.eval()
+            with torch.no_grad():
+                v_loss = sum(criterion(model(bx), by) for bx, by in val_loader) / len(val_loader)
+                print(f"Epoch {epoch+1} | Val MSE: {v_loss:.6f}")
+
+    torch.save(model.state_dict(), "mlp/perfect_mlp.pth")
+    return model
 
 if __name__ == "__main__":
-    train()
+    trained_model = train_to_perfection()

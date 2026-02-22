@@ -1,57 +1,33 @@
 import torch
-import pandas as pd
-from torch.utils.data import DataLoader
+from mlp.mlp_definition import InterpretabilityMLP
+from dataset.data_loader import load_excel_to_dataloader
 
-def harvest_and_export(model, dataset, device="cpu", prefix="harvested_data"):
-    """
-    Harvests activations and saves:
-    1. A .pt file containing the activation tensors.
-    2. An .xlsx file containing the corresponding inputs/targets.
-    """
-    model.to(device)
+def harvest_activations(model_path, dataloader):
+    # 1. Setup Model
+    model = InterpretabilityMLP()
+    model.load_state_dict(torch.load(model_path))
     model.eval()
-    
-    # We use batch_size=1 to make mapping back to dataset metadata foolproof
-    # If speed is an issue, you can increase this and flatten lists
-    loader = DataLoader(dataset, batch_size=512, shuffle=False)
     
     all_acts = []
     
-    print(f"Harvesting activations...")
-    
+    print("Harvesting activations...")
     with torch.no_grad():
-        for grids, coords_oh, targets in loader:
-            # --- THE FIX: Move inputs to the same device as the model ---
-            grids = grids.to(device)
-            coords_oh = coords_oh.to(device)
-
+        for batch_x, _ in dataloader:
             # Forward pass triggers the internal dictionary storage
-            _ = model(grids, coords_oh)
+            _ = model(batch_x)
+            # We take 'layer2' which corresponds to the 512-dim hidden1 output
+            acts = model.activations['layer2']
+            all_acts.append(acts.cpu())
             
-            # Extract and move to CPU immediately for storage (to save GPU memory)
-            acts = model.activations['layer2'].cpu()
-            all_acts.append(acts)
-                
-    # 1. Save Tensors
-    final_acts = torch.cat(all_acts, dim=0)
-    pt_path = f"{prefix}.pt"
-    torch.save(final_acts, pt_path)
-    
-    print(f"Successfully harvested {final_acts.shape[0]} samples.")
-    print(f"Tensor file: {pt_path}")
-    
-    return pt_path
+    # Concatenate into one massive tensor [8000, 512]
+    final_tensor = torch.cat(all_acts, dim=0)
+    torch.save(final_tensor, "mlp_activations.pt")
+    print(f"Success! Saved tensor of shape: {final_tensor.shape}")
+    return final_tensor
 
-# --- Integration with your existing workflow ---
 if __name__ == "__main__":
 
-    from mlp.mlp_definition import FinalSpatialMLP
-    from dataset.data_generator import OneHotSpatialDataset
-
-    model = FinalSpatialMLP(grid_size=5, hidden_dim=256)
-    model.load_state_dict(torch.load("mlp/final_spatial_model.pth"))
-
-    train_ds = OneHotSpatialDataset(pt_path="dataset/train_data.pt")
-
-    # Assuming model and dataset are already initialized
-    pt_file = harvest_and_export(model, train_ds, device="cuda")
+    # --- Execution ---
+    # Use your training loader (8000 samples)
+    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx", batch_size=64)
+    activations = harvest_activations("mlp/perfect_mlp.pth", train_loader)

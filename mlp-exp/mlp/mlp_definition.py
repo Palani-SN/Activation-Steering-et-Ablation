@@ -1,43 +1,32 @@
-
 import torch.nn as nn
 
-# --- 1. MODEL with One-Hot Input ---
-class FinalSpatialMLP(nn.Module):
-    def __init__(self, grid_size=5, hidden_dim=256):
+# --- 2. The MLP Model ---
+class InterpretabilityMLP(nn.Module):
+    def __init__(self):
         super().__init__()
-        # 4 coordinates * 5 possible values = 20 inputs for coords
-        self.coord_dim = grid_size * 4 
-        
-        self.grid_net = nn.Sequential(
-            nn.Linear(grid_size * grid_size, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.ReLU()
-        )
-        
-        self.coord_net = nn.Sequential(
-            nn.Linear(self.coord_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, hidden_dim),
-            nn.Sigmoid()
-        )
-        
-        self.output_head = nn.Sequential(
-            nn.Linear(hidden_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1)
-        )
+        # Using a wider architecture to allow "lookup table" behavior
+        self.layers = nn.ModuleDict({
+            'input': nn.Linear(10, 256),
+            'bn1': nn.BatchNorm1d(256),
+            'hidden1': nn.Linear(256, 512), # Wider layer for SAE injection
+            'bn2': nn.BatchNorm1d(512),
+            'hidden2': nn.Linear(512, 256),
+            'output': nn.Linear(256, 1)
+        })
+        self.relu = nn.ReLU()
         self.activations = {}
 
-    def forward(self, grid, coords_one_hot, return_activations=False):
-
-        g = self.grid_net(grid)
-        c = self.coord_net(coords_one_hot)
+    def forward(self, x):
+        # Layer 1
+        x = self.relu(self.layers['bn1'](self.layers['input'](x)))
         
-        # This is the "interconnected" representation you want to probe
-        acts = g * c 
-        self.activations['layer2'] = acts  # Store for later harvesting
-        out = self.output_head(acts)
+        # Layer 2: THIS is where we will inject the SAE later
+        x = self.relu(self.layers['bn2'](self.layers['hidden1'](x)))
+        self.activations['layer2'] = x 
         
-        if return_activations:
-            return out, acts
-        return out
+        # Layer 3
+        x = self.relu(self.layers['hidden2'](x))
+        
+        # Output
+        x = self.layers['output'](x)
+        return x
