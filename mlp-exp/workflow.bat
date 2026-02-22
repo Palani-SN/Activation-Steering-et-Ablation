@@ -7,7 +7,7 @@ for /f "tokens=*" %%a in ('powershell -command "Get-Date -Format 'HH:mm:ss'"') d
 
 :: --- YOUR CODE STARTS HERE ---
 echo [1/7] Activating Environment...
-call conda activate mlp || (echo Failed to activate conda & exit /b 1)
+call conda activate act-abl || (echo Failed to activate conda & exit /b 1)
 
 echo [2/7] Generating Dataset...
 cd dataset
@@ -23,11 +23,11 @@ python harvest_activations.py || (echo Activation harvest failed & exit /b 1)
 echo [5/7] Training Sparse Autoencoder (SAE)...
 python train_sae.py || (echo SAE training failed & exit /b 1)
 
-echo [6/7] Running Feature Probe...
-python feature_probe.py || (echo Feature probe failed & exit /b 1)
+echo [6/7] Running Restrict Negatives...
+python restrict_negatives.py || (echo Restrict negatives failed & exit /b 1)
 
-echo [7/7] Generating Feature Reports...
-python feature_reports.py || (echo Feature report generation failed & exit /b 1)
+echo [7/7] Generating Restrict Positives...
+python restrict_positives.py || (echo Restrict positives failed & exit /b 1)
 
 echo.
 echo ======================================================
