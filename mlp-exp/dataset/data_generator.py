@@ -2,60 +2,103 @@ import random
 import pandas as pd
 import numpy as np
 
+
 class MLPExcelGenerator:
     def __init__(self, input_shape=(5, 2)):
-        self.input_shape = input_shape
+        self.input_shape = input_shape  # (x_dim, y_dim) -> 5 columns, 2 rows
 
-    def stream_data(self, num_rows: int):
-        """Yields (input_list, output_list) pairs using index-based logic."""
-        # x is rows (5), y is cols (2)
-        x_dim, y_dim = self.input_shape 
-        
-        for _ in range(num_rows):
-            # 1. Create the input matrix
-            # Each row gets random ints (0-10), last element is a valid index (0 to x-2)
-            inp = np.array([
-                (
-                    [random.randint(0, 9) for _ in range(x_dim - 1)]
-                    +
-                    [random.randint(0, x_dim - 2)]
-                ) for _ in range(y_dim)
-            ])
-            
-            # --- YOUR MATH MODEL LOGIC ---
-            # out = abs( value_at_index_from_first_col - value_at_index_from_second_col )
-            # Logic: Using the last element of each column as an index for that column
-            val1 = inp[0][inp[0][-1]]
-            val2 = inp[-1][inp[-1][-1]]
-            out = np.array([abs(val1 - val2)])
-            
-            # Yield as Python lists
-            yield inp.flatten().tolist(), out.tolist()
+    def _generate_single_sample(self):
+        """Generates one random sample and calculates its output and labels."""
+        x_dim, y_dim = self.input_shape
+
+        # 1. Create the input matrix
+        # Each row (y_dim=2) gets 4 random ints (0-9) and 1 index (0-3)
+        inp = np.array([
+            (
+                [random.randint(0, 9) for _ in range(x_dim - 1)]
+                +
+                [random.randint(0, x_dim - 2)]
+            ) for _ in range(y_dim)
+        ])
+
+        # 2. Logic: Index into the rows using the last element
+        val1 = inp[0][inp[0][-1]]
+        val2 = inp[-1][inp[-1][-1]]
+        out_val = int(val1 - val2)
+
+        # 3. Determine Concept Group
+        is_pos = out_val > 0
+        is_neg = out_val < 0
+        is_odd = abs(out_val) % 2 != 0
+        is_even = abs(out_val) % 2 == 0
+
+        # Determine specific quadrant for balancing
+        # Note: we exclude 0 to maintain 4 clean quadrants for steering
+        group = None
+        if is_pos and is_odd:
+            group = "pos_odd"
+        elif is_pos and is_even:
+            group = "pos_even"
+        elif is_neg and is_odd:
+            group = "neg_odd"
+        elif is_neg and is_even:
+            group = "neg_even"
+
+        return inp.flatten().tolist(), [out_val], group
+
+    def generate_balanced_data(self, total_rows: int):
+        """Generates data ensuring equal proportions of the 4 concept combinations."""
+        target_per_group = total_rows // 4
+        buckets = {
+            "pos_odd": [],
+            "pos_even": [],
+            "neg_odd": [],
+            "neg_even": []
+        }
+
+        print(
+            f"Generating {total_rows} balanced samples ({target_per_group} per concept group)...")
+
+        attempts = 0
+        while any(len(b) < target_per_group for b in buckets.values()):
+            inp_list, out_list, group = self._generate_single_sample()
+            attempts += 1
+
+            # If it falls into a group and that group isn't full, keep it
+            if group and len(buckets[group]) < target_per_group:
+                buckets[group].append({
+                    "input_list": inp_list,
+                    "output_list": out_list,
+                    "concept": group  # Storing this helps with SAE analysis later
+                })
+
+            if attempts % 5000 == 0:
+                counts = {k: len(v) for k, v in buckets.items()}
+                print(f" Progress: {counts}")
+
+        # Combine, shuffle and return
+        all_data = []
+        for b in buckets.values():
+            all_data.extend(b)
+
+        random.shuffle(all_data)
+        return all_data
 
     def save_all_splits(self, train=8000, val=1000, test=1000):
-        """Generates and saves three separate Excel files."""
+        """Generates and saves three separate Excel files with balanced data."""
         splits = {
             "mlp_train.xlsx": train,
             "mlp_val.xlsx": val,
             "mlp_test.xlsx": test
         }
-        
+
         for filename, count in splits.items():
-            print(f"Generating {count} rows for {filename}...")
-            data_records = []
-            
-            for inp_list, out_list in self.stream_data(count):
-                data_records.append({
-                    "input_list": str(inp_list), 
-                    "output_list": str(out_list)
-                })
-            
-            df = pd.DataFrame(data_records)
+            balanced_records = self.generate_balanced_data(count)
+            df = pd.DataFrame(balanced_records)
             df.to_excel(filename, index=False)
             print(f"Successfully saved {filename}")
 
-# --- Execution ---
+
 if __name__ == "__main__":
-    # Note: Your input_shape is (5, 2), matching your indexing logic
-    generator = MLPExcelGenerator(input_shape=(5, 2))
-    generator.save_all_splits(train=8000, val=1000, test=1000)
+    generator = MLPExcelGenerator()
+    generator.save_all_splits()

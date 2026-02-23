@@ -1,112 +1,86 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from dataset.data_loader import load_excel_to_dataloader
+from dataset.data_loader import load_excel_to_dataloader, CONCEPT_MAP
 from mlp.mlp_definition import InterpretabilityMLP
 
-# --- 3. Training Script ---
-def train_model():
-    model = InterpretabilityMLP()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.MSELoss()
-
-    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx")
-    val_loader = load_excel_to_dataloader("dataset/mlp_val.xlsx")
-
-    for epoch in range(250):
-        model.train()
-        for batch_x, batch_y in train_loader:
-            optimizer.zero_grad()
-            preds = model(batch_x)
-            loss = criterion(preds, batch_y)
-            loss.backward()
-            optimizer.step()
-        
-        # Simple Validation
-        model.eval()
-        with torch.no_grad():
-            val_loss = sum(criterion(model(bx), by) for bx, by in val_loader) / len(val_loader)
-            print(f"Epoch {epoch+1} | Val Loss: {val_loss:.4f}")
-
-    torch.save(model.state_dict(), "mlp/trained_mlp.pth")
-    return model
-
-# --- 3. Training & Testing Script ---
-def train_and_test_model():
-    model = InterpretabilityMLP()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.MSELoss()
-
-    # Load all three sets
-    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx")
-    val_loader   = load_excel_to_dataloader("dataset/mlp_val.xlsx")
-    test_loader  = load_excel_to_dataloader("dataset/mlp_test.xlsx")
-
-    # --- Training Loop ---
-    for epoch in range(250):
-        model.train()
-        for batch_x, batch_y in train_loader:
-            optimizer.zero_grad()
-            loss = criterion(model(batch_x), batch_y)
-            loss.backward()
-            optimizer.step()
-        
-        # Validation Check
-        model.eval()
-        with torch.no_grad():
-            v_loss = sum(criterion(model(bx), by) for bx, by in val_loader) / len(val_loader)
-            print(f"Epoch {epoch+1} | Val MSE: {v_loss:.4f}")
-
-    # --- FINAL TEST STEP ---
-    model.eval()
-    test_loss = 0
-    with torch.no_grad():
-        for bx, by in test_loader:
-            preds = model(bx)
-            test_loss += criterion(preds, by).item()
-    
-    avg_test_loss = test_loss / len(test_loader)
-    print("\n--- Final Results ---")
-    print(f"Final Test MSE: {avg_test_loss:.4f}")
-    
-    # Save the model
-    torch.save(model.state_dict(), "mlp/trained_mlp.pth")
-    return model
 
 def train_to_perfection():
-    model = InterpretabilityMLP()
-    train_loader = load_excel_to_dataloader("dataset/mlp_train.xlsx", batch_size=64)
-    val_loader = load_excel_to_dataloader("dataset/mlp_val.xlsx", batch_size=64)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = InterpretabilityMLP().to(device)
 
-    epochs = 500 # Pushing further for total convergence
+    # Use include_concepts=True to handle the new balanced dataset format
+    train_loader = load_excel_to_dataloader(
+        "dataset/mlp_train.xlsx", batch_size=64, include_concepts=True)
+    val_loader = load_excel_to_dataloader(
+        "dataset/mlp_val.xlsx", batch_size=64, include_concepts=True)
+    test_loader = load_excel_to_dataloader(
+        "dataset/mlp_test.xlsx", batch_size=64, include_concepts=True)
+
+    epochs = 500
     optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
-    
-    # OneCycleLR helps "jump" into the correct indexing logic
+
     scheduler = optim.lr_scheduler.OneCycleLR(
-        optimizer, max_lr=1e-2, 
-        steps_per_epoch=len(train_loader), 
+        optimizer, max_lr=1e-2,
+        steps_per_epoch=len(train_loader),
         epochs=epochs
     )
-    
+
     criterion = nn.MSELoss()
+
+    print(f"Starting training on {device}...")
 
     for epoch in range(epochs):
         model.train()
-        for batch_x, batch_y in train_loader:
+        for batch_x, batch_y, _ in train_loader:  # Unpack and ignore groups during training
+            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+
             optimizer.zero_grad()
             loss = criterion(model(batch_x), batch_y)
             loss.backward()
             optimizer.step()
             scheduler.step()
-        
+
         if (epoch + 1) % 50 == 0:
             model.eval()
             with torch.no_grad():
-                v_loss = sum(criterion(model(bx), by) for bx, by in val_loader) / len(val_loader)
+                v_loss = sum(criterion(model(bx.to(device)), by.to(device))
+                             for bx, by, _ in val_loader) / len(val_loader)
                 print(f"Epoch {epoch+1} | Val MSE: {v_loss:.6f}")
 
+    # --- RESEARCHER-TIER EVALUATION: PER-CONCEPT ACCURACY ---
+    print("\n--- Final Performance Analysis ---")
+    model.eval()
+
+    # Initialize trackers for each concept group
+    inv_map = {v: k for k, v in CONCEPT_MAP.items()}
+    group_losses = {name: [] for name in CONCEPT_MAP.keys()}
+
+    with torch.no_grad():
+        for bx, by, bg in test_loader:
+            bx, by = bx.to(device), by.to(device)
+            preds = model(bx)
+
+            # Calculate individual squared errors for this batch
+            errors = (preds - by)**2
+
+            # Attribute errors to their respective concept groups
+            for i in range(len(bg)):
+                group_name = inv_map[bg[i].item()]
+                group_losses[group_name].append(errors[i].item())
+
+    # Final report
+    overall_mse = 0
+    for name, losses in group_losses.items():
+        avg_mse = sum(losses) / len(losses)
+        overall_mse += avg_mse
+        print(
+            f"Concept: {name:10} | MSE: {avg_mse:.6f} | Count: {len(losses)}")
+
+    print(f"Total Test MSE: {overall_mse / 4:.6f}")
+
+    # Save the model
     torch.save(model.state_dict(), "mlp/perfect_mlp.pth")
-    return model
 
 if __name__ == "__main__":
-    trained_model = train_to_perfection()
+    train_to_perfection()
