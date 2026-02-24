@@ -12,7 +12,13 @@ def harvest_activations(model_path, dataloader, device="cuda"):
     all_acts = []
     all_labels = []
     
-    print(f"Harvesting activations on {device}...")
+    print("\n" + "="*70)
+    print("  HARVESTING ACTIVATIONS FROM TRAINED MLP")
+    print("="*70)
+    print(f"  Device: {device}")
+    print(f"  Expected Samples: ~8000")
+    print("="*70 + "\n")
+    print(f"  -> Harvesting activations on {device}...")
     
     with torch.no_grad():
         # Unpack the concept tags (bg) along with inputs (bx)
@@ -40,7 +46,8 @@ def harvest_activations(model_path, dataloader, device="cuda"):
     }
     
     torch.save(payload, "harvested_data.pt")
-    print(f"Success! Saved {final_acts.shape[0]} activations with metadata.")
+    print(f"\n  [OK] Successfully saved {final_acts.shape[0]} activations with metadata.")
+    print("="*70 + "\n")
     return payload
 
 if __name__ == "__main__":

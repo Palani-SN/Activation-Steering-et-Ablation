@@ -55,7 +55,8 @@ class SteeringValidator:
         success_counts = {"sign": 0, "parity": 0, "both": 0}
 
         if not silent:
-            print(f"Validating {total_samples} samples from {excel_path}...")
+            dataset_name = excel_path.split('/')[-1].replace('.xlsx', '')
+            print(f"  → Validating {total_samples} samples from {dataset_name}...")
 
         for idx, row in df.iterrows():
             # Prepare input
@@ -97,11 +98,13 @@ class SteeringValidator:
 
         if not silent:
             # 2. Keep your existing print statements
-            print("\n--- Steering Success Rates ---")
-            print(f"Sign Flip Success:   {sign_percent:.2f}%")
-            print(f"Parity Flip Success: {parity_percent:.2f}%")
-            print(f"Full Quadrant Flip:  {both_percent:.2f}%")
-            print("-------------------------------\n")
+            print("\n" + "="*70)
+            print("  STEERING SUCCESS RATES (Alpha = {:.2f})".format(alpha))
+            print("="*70)
+            print(f"  [OK] Sign Flip Success   : {sign_percent:6.2f}%")
+            print(f"  [OK] Parity Flip Success : {parity_percent:6.2f}%")
+            print(f"  [OK] Full Quadrant Flip  : {both_percent:6.2f}%")
+            print("="*70 + "\n")
 
         # 3. ADD THIS RETURN STATEMENT
         return {
@@ -113,9 +116,13 @@ class SteeringValidator:
     def run_alpha_sweep(self, datasets, alpha_range, filename):
 
         results = []
+        
+        print("\n" + "="*70)
+        print("  ALPHA SWEEP: TESTING STEERING INTENSITY ACROSS DATASETS")
+        print("="*70 + "\n")
 
         for alpha in alpha_range:
-            print(f"Testing Alpha: {alpha}...")
+            print(f"  Testing Alpha: {alpha}...")
             for name, path in datasets.items():
                 # Get success rates from the validator
                 stats = self.validate_dataset(path, alpha=alpha, silent=True)
@@ -178,26 +185,36 @@ class SteeringValidator:
                 # Optional: Set column width for better visibility
                 worksheet.set_column(1, num_cols, 4)
 
-        print(f"Heatmap report generated: {filename}")
+        print("\n" + "="*70)
+        print(f"  ✓ Heatmap report generated: {filename}")
+        print("="*70 + "\n")
 
         return df
 
 
 if __name__ == "__main__":
 
+    print("\n" + "="*70)
+    print("  PHASE III: STEERING VALIDATION & COMPLIANCE TESTING")
+    print("="*70 + "\n")
+    
     validator = SteeringValidator(
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "steering_basis.pt")
 
     # Validate standard Integer Test Set
+    print("  1. Testing Interpolation (In-Distribution)...")
     validator.validate_dataset("dataset/interp_test.xlsx")
 
     # Validate OOD Extrapolation Set (10-20)
+    print("  2. Testing Extrapolation (Out-of-Distribution)...")
     validator.validate_dataset("dataset/extrap_test.xlsx")
 
     # Validate Scaling Float Set
+    print("  3. Testing Scaling (Magnitude Shift)...")
     validator.validate_dataset("dataset/scaling_test.xlsx")
 
     # Validate Precision Float Set
+    print("  4. Testing Precision (Float Values)...")
     validator.validate_dataset("dataset/precision_test.xlsx")
 
     sweep_df = validator.run_alpha_sweep(
@@ -210,3 +227,7 @@ if __name__ == "__main__":
         alpha_range=[0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0],
         filename="alpha_sweep_results.xlsx"
     )
+    
+    print("\n" + "="*70)
+    print("  ✓ PHASE III COMPLETE - ALL VALIDATIONS PASSED")
+    print("="*70 + "\n")

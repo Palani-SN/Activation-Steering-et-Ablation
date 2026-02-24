@@ -80,26 +80,38 @@ class OODDataGenerator(MLPExcelGenerator):
         df = pd.DataFrame(balanced_records)
         df.to_excel(filename, index=False)
         print(
-            f"Successfully saved OOD test set: {filename} (Range: {self.min_val}-{self.max_val})")
+            f"    [OK] {filename:20} | {count:5d} samples | Range: [{self.min_val}-{self.max_val}]")
 
 
 if __name__ == "__main__":
+    print("\n" + "="*70)
+    print("  OOD VARIANT DATASET GENERATION")
+    print("="*70 + "\n")
+    
     # Create the generator for the Interpolation Test (Range 0-4)
     # This subset range was seen by the model during its original training.
+    print("  → Generating Interpolation Test (In-Distribution)...")
     ood_generator = OODDataGenerator(min_val=0, max_val=4)
     ood_generator.save_ood_test_set(count=1000, filename="interp_test.xlsx")
 
     # Create the generator for the Extrapolation Test (Range 10-19)
     # This subset range was not seen by the model during its original training.
+    print("  → Generating Extrapolation Test (Out-of-Distribution)...")
     ood_generator = OODDataGenerator(min_val=10, max_val=19)
     ood_generator.save_ood_test_set(count=1000, filename="extrap_test.xlsx")
 
     # Create the generator for the Scaling Test (Range 100-109)
     # This subset range was not seen by the model during its original training.
+    print("  → Generating Scaling Test (Magnitude Shift)...")
     ood_generator = OODDataGenerator(min_val=100, max_val=109)
     ood_generator.save_ood_test_set(count=1000, filename="scaling_test.xlsx")
 
-    # Create the generator for the Scaling Test (Range 0.0-9.0)
+    # Create the generator for the Precision Test (Range 0.0-9.0)
     # This subset range was not seen by the model during its original training.
+    print("  → Generating Precision Test (Float Values)...")
     ood_generator = OODDataGenerator(min_val=0.0, max_val=9.0, dtype=float)
     ood_generator.save_ood_test_set(count=1000, filename="precision_test.xlsx")
+    
+    print("\n" + "="*70)
+    print("  ✓ ALL OOD VARIANT DATASETS GENERATED")
+    print("="*70 + "\n")

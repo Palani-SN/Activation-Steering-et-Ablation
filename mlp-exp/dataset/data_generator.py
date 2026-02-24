@@ -56,8 +56,7 @@ class MLPExcelGenerator:
             "neg_even": []
         }
 
-        print(
-            f"Generating {total_rows} balanced samples ({target_per_group} per concept group)...")
+        print(f"\n  ⚙ Generating {total_rows} balanced samples ({target_per_group} per group)...")
 
         attempts = 0
         while any(len(b) < target_per_group for b in buckets.values()):
@@ -74,7 +73,8 @@ class MLPExcelGenerator:
 
             if attempts % 5000 == 0:
                 counts = {k: len(v) for k, v in buckets.items()}
-                print(f" Progress: {counts}")
+                progress_bar = " | ".join([f"{k}: {v}/{target_per_group}" for k, v in counts.items()])
+                print(f"    Progress: {progress_bar}")
 
         # Combine, shuffle and return
         all_data = []
@@ -92,11 +92,17 @@ class MLPExcelGenerator:
             "mlp_test.xlsx": test
         }
 
+        print("\n" + "="*70)
+        print("  DATASET GENERATION PIPELINE")
+        print("="*70 + "\n")
+
         for filename, count in splits.items():
             balanced_records = self.generate_balanced_data(count)
             df = pd.DataFrame(balanced_records)
             df.to_excel(filename, index=False)
-            print(f"Successfully saved {filename}")
+            print(f"    [OK] {filename:20} | {count:5d} samples generated")
+        
+        print("\n" + "="*70 + "\n")
 
 
 if __name__ == "__main__":

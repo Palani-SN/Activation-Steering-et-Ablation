@@ -58,7 +58,10 @@ def get_top_k_features_by_group(mlp_path, sae_path, excel_path, k=5):
     group_features = defaultdict(lambda: defaultdict(float))
     group_counts = defaultdict(int)
 
-    print("Analyzing feature activations across groups...")
+    print("\n" + "="*70)
+    print("  ANALYZING FEATURE ACTIVATIONS ACROSS GROUPS")
+    print("="*70)
+    print("  -> Processing test samples and extracting SAE features...\n")
     with torch.no_grad():
         for _, row in df.iterrows():
             group = row['concept']
@@ -99,9 +102,11 @@ def get_distinct_features_by_group():
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "dataset/mlp_test.xlsx", k=k
     )
 
-    print(f"\n--- Top-{k} Features per Group ---")
+    print("\n" + "="*70)
+    print(f"  TOP-{k} FEATURES PER CONCEPT GROUP")
+    print("="*70)
     for group, feats in features_by_group.items():
-        print(f"{group}: {feats}")
+        print(f"  {group:12} : {feats}")
 
     # Logic to find "Pure" features
     pos_feats = set(features_by_group['pos_odd']) & set(
@@ -115,27 +120,26 @@ def get_distinct_features_by_group():
 
     # Common Features
     common_feats = pos_feats & odd_feats & neg_feats & eve_feats
-    print(f"Universal Common Features: {sorted(list(common_feats))}")
+    print(f"\n  [OK] Universal Common Features: {sorted(list(common_feats))}")
 
-    print("\n--- Identified Subsets (Intersections) ---")
-    print(f"Universal Positive Sign Features: {sorted(list(pos_feats))}")
-    print(f"Universal Odd Parity Features:    {sorted(list(odd_feats))}")
-    print(f"Universal Negative Sign Features: {sorted(list(neg_feats))}")
-    print(f"Universal Even Parity Features:   {sorted(list(eve_feats))}")
+    print("\n" + "="*70)
+    print("  IDENTIFIED FEATURE SUBSETS (INTERSECTIONS)")
+    print("="*70)
+    print(f"  Positive Sign Features : {sorted(list(pos_feats))}")
+    print(f"  Odd Parity Features    : {sorted(list(odd_feats))}")
+    print(f"  Negative Sign Features : {sorted(list(neg_feats))}")
+    print(f"  Even Parity Features   : {sorted(list(eve_feats))}")
 
     pos_only_feats = pos_feats - common_feats
     neg_only_feats = neg_feats - common_feats
     odd_only_feats = odd_feats - common_feats
     eve_only_feats = eve_feats - common_feats
 
-    print(
-        f"  Distinct Even Parity Features: {sorted(list(eve_only_feats))}")
-    print(
-        f"  Distinct Positive Sign Features: {sorted(list(pos_only_feats))}")
-    print(
-        f"  Distinct Odd Parity Features: {sorted(list(odd_only_feats))}")
-    print(
-        f"  Distinct Negative Sign Features: {sorted(list(neg_only_feats))}")
+    print("\n  DISTINCT (Non-Common) Features:")
+    print(f"    → Even Parity        : {sorted(list(eve_only_feats))}")
+    print(f"    → Positive Sign      : {sorted(list(pos_only_feats))}")
+    print(f"    → Odd Parity        : {sorted(list(odd_only_feats))}")
+    print(f"    → Negative Sign      : {sorted(list(neg_only_feats))}")
 
     # 1. Create the dictionary of discovered feature IDs
     feature_subsets = {
@@ -148,7 +152,8 @@ def get_distinct_features_by_group():
 
     # 2. Save the dictionary for Phase III
     torch.save(feature_subsets, "feature_subsets.pt")
-    print(f"Successfully saved {len(feature_subsets)} feature groups to feature_subsets.pt")
+    print(f"\n  [OK] Successfully saved {len(feature_subsets)} feature groups")
+    print("="*70 + "\n")
 
     return {
         "pos_sign": sorted(list(pos_only_feats)),
@@ -248,12 +253,14 @@ def run_surgical_ablation(input_vals, target_features, label):
         # Pass through output
         final_out = mlp.layers['output'](x).item()
 
-    print(f"\n--- Ablation Test: {label} ---")
-    print(f"Original Output: {baseline_out:.4f}")
-    print(f"Ablated Output:  {final_out:.4f}")
+    print(f"\n{'-'*70}")
+    print(f"  [*] ABLATION TEST: {label}")
+    print(f"{'-'*70}")
+    print(f"  Original Output : {baseline_out:8.4f}")
+    print(f"  Ablated Output  : {final_out:8.4f}")
 
     shift = final_out - baseline_out
-    print(f"Causal Shift:    {shift:.4f}")
+    print(f"  Causal Shift    : {shift:+8.4f}")
 
 
 if __name__ == "__main__":
@@ -265,8 +272,13 @@ if __name__ == "__main__":
     # 4. Metric: Orthogonality Check
     cosine_sim = torch.nn.functional.cosine_similarity(
         v_sign.unsqueeze(0), v_parity.unsqueeze(0))
-    print(f"Sign-Parity Cosine Similarity: {cosine_sim.item():.4f}")
-    print("Interpretation: Near 0.0 means the concepts are perfectly disentangled.")
+    
+    print("\n" + "="*70)
+    print("  STEERING BASIS VECTORS ANALYSIS")
+    print("="*70)
+    print(f"  Sign-Parity Cosine Similarity: {cosine_sim.item():.4f}")
+    print(f"  Interpretation: Near 0.0 → concepts are perfectly disentangled ✓")
+    print("="*70 + "\n")
 
     torch.save({"v_sign": v_sign, "v_parity": v_parity}, "steering_basis.pt")
 

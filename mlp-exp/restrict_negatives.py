@@ -30,7 +30,7 @@ class TotalSuppressionSteering(nn.Module):
         self.feature_means = self._compute_feature_means(dataset)
 
     def _compute_feature_means(self, dataset):
-        print("Calculating stable feature means...")
+        print("\n  [*] Calculating stable feature means...")
         loader = DataLoader(dataset, batch_size=128)
         all_f_acts = []
         with torch.no_grad():
@@ -87,9 +87,9 @@ def get_causal_drivers(mlp, sae_path, k=10, find_positive=True, device="cuda"):
 
 def comparative_inference(original_mlp, steered_model, dataset, num_samples=10):
     """Prints a side-by-side comparison of original vs steered predictions."""
-    print(f"\n{'#'*20} COMPARATIVE INFERENCE {'#'*20}")
+    print(f"\n{'-'*100}")
     print(f"{'Sample':<8} | {'Ground Truth':<15} | {'Original Pred':<15} | {'Steered Pred':<15} | {'Status'}")
-    print("-" * 85)
+    print("─"*100)
     
     loader = DataLoader(dataset, batch_size=1, shuffle=True)
     device = steered_model.device
@@ -127,10 +127,14 @@ def run_test(model, dataset):
             pred_neg += (pred < 0).sum().item()
             
     reduction = (1 - (pred_neg / target_neg)) * 100 if target_neg > 0 else 0
-    print(f"\nFinal Statistics:")
-    print(f"Target Negatives: {target_neg}")
-    print(f"Steered Negatives: {pred_neg}")
-    print(f"Suppression Rate: {reduction:.2f}%")
+    
+    print(f"\n" + "="*70)
+    print(f"  FINAL STATISTICS (NEGATIVE SUPPRESSION)")
+    print(f"="*70)
+    print(f"  Target Negatives    : {target_neg:6d}")
+    print(f"  Steered Negatives   : {pred_neg:6d}")
+    print(f"  Suppression Rate    : {reduction:6.2f}%")
+    print(f"="*70 + "\n")
 
 def export_steering_configs(mlp, sae_path, dataset, output_path="steering_config.pt"):
     """
@@ -167,13 +171,15 @@ def export_steering_configs(mlp, sae_path, dataset, output_path="steering_config
     }
     
     torch.save(config, output_path)
-    print(f"Steering configuration exported to {output_path}")
+    print(f"\n  [OK] Steering configuration exported to {output_path}\n")
 
 if __name__ == "__main__":
 
     set_seed(42)
 
-    print(f"\n--- ABLATING NEGATIVES ---")    
+    print(f"\n" + "="*70)
+    print(f"  CONSTRAINT STEERING: ABLATING NEGATIVES")
+    print(f"="*70 + "\n")    
     from mlp.mlp_definition import FinalSpatialMLP
     from dataset.data_generator import OneHotSpatialDataset
     
@@ -187,9 +193,12 @@ if __name__ == "__main__":
     neg_ids = get_causal_drivers(mlp, sae_path, k=10, find_positive=False)
     pos_ids = get_causal_drivers(mlp, sae_path, k=5, find_positive=True)
     
-    print(f"\n--- CAUSAL DRIVERS FOUND ---")
-    print(f"Ablating (Negatives): {neg_ids}")
-    print(f"Steering (Positives): {pos_ids}")
+    print(f"\n" + "-"*70)
+    print(f"  CAUSAL DRIVERS IDENTIFIED")
+    print(f"-"*70)
+    print(f"  Ablating (Negatives): {neg_ids}")
+    print(f"  Steering (Positives): {pos_ids}")
+    print(f"-"*70 + "\n")
 
     surgical_model = TotalSuppressionSteering(mlp, sae_path, dataset, 
                                             ablate_ids=neg_ids, 

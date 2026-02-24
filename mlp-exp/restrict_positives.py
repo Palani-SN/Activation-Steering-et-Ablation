@@ -95,9 +95,13 @@ def run_test(model, dataset):
     # Success is defined by how many originally positive samples are now negative
     reduction = (1 - (pred_pos / target_pos)) * 100 if target_pos > 0 else 0
     
-    print(f"\nFinal Statistics (Positive Suppression):")
-    print(f"Target Positives: {target_pos}")
-    print(f"Steered Positives: {pred_pos}")
+    print(f"\n" + "="*70)
+    print(f"  FINAL STATISTICS (POSITIVE SUPPRESSION)")
+    print(f"="*70)
+    print(f"  Target Positives    : {target_pos:6d}")
+    print(f"  Steered Positives   : {pred_pos:6d}")
+    print(f"  Suppression Rate    : {reduction:6.2f}%")
+    print(f"="*70 + "\n")
     print(f"Suppression Rate: {reduction:.2f}%")
 
 def comparative_inference_negative(original_mlp, steered_model, dataset, num_samples=15):

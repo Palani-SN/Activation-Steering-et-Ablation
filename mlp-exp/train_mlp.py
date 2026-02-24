@@ -28,7 +28,13 @@ def train_to_perfection():
 
     criterion = nn.MSELoss()
 
-    print(f"Starting training on {device}...")
+    print("\n" + "="*70)
+    print(f"  PHASE I: TRAINING MLP TO INTERPRETABLE PERFECTION")
+    print("="*70)
+    print(f"  Device: {device}")
+    print(f"  Total Epochs: {epochs}")
+    print(f"  Batch Size: 64")
+    print("="*70 + "\n")
 
     for epoch in range(epochs):
         model.train()
@@ -46,10 +52,16 @@ def train_to_perfection():
             with torch.no_grad():
                 v_loss = sum(criterion(model(bx.to(device)), by.to(device))
                              for bx, by, _ in val_loader) / len(val_loader)
-                print(f"Epoch {epoch+1} | Val MSE: {v_loss:.6f}")
+                pct = ((epoch + 1) / epochs) * 100
+                bar_len = 30
+                filled = int(bar_len * (epoch + 1) / epochs)
+                bar = "█" * filled + "░" * (bar_len - filled)
+                print(f"  [{bar}] Epoch {epoch+1:3d}/{epochs} | Val MSE: {v_loss:.6f} | {pct:5.1f}%")
 
     # --- EVALUATION: PER-CONCEPT ACCURACY ---
-    print("\n--- Final Performance Analysis ---")
+    print("\n" + "="*70)
+    print("  FINAL PERFORMANCE ANALYSIS")
+    print("="*70)
     model.eval()
 
     # Initialize trackers for each concept group
@@ -71,13 +83,17 @@ def train_to_perfection():
 
     # Final report
     overall_mse = 0
+    print("\n  Per-Concept Metrics:")
+    print("  " + "-"*66)
     for name, losses in group_losses.items():
         avg_mse = sum(losses) / len(losses)
         overall_mse += avg_mse
-        print(
-            f"Concept: {name:10} | MSE: {avg_mse:.6f} | Count: {len(losses)}")
+        name_display = name.replace('_', ' ').title()
+        print(f"  → {name_display:20} | MSE: {avg_mse:.6f} | Samples: {len(losses):4d}")
 
-    print(f"Total Test MSE: {overall_mse / 4:.6f}")
+    print("  " + "-"*66)
+    print(f"  ✓ Total Test MSE: {overall_mse / 4:.6f}")
+    print("="*70 + "\n")
 
     # Save the model
     torch.save(model.state_dict(), "mlp/perfect_mlp.pth")

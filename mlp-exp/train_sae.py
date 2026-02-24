@@ -16,6 +16,16 @@ def train_sae_from_payload(payload_path, epochs=100):
     sae = SparseAutoencoder(input_dim=512, dict_size=2048, k=20).cuda()
     optimizer = optim.Adam(sae.parameters(), lr=1e-3)
 
+    print("\n" + "="*70)
+    print("  PHASE II: TRAINING SPARSE AUTOENCODER (SAE)")
+    print("="*70)
+    print(f"  Input Dimension: 512")
+    print(f"  Dictionary Size: 2048")
+    print(f"  Sparsity (k): 20")
+    print(f"  Total Epochs: {epochs}")
+    print(f"  Batch Size: 128")
+    print("="*70 + "\n")
+
     for epoch in range(epochs):
         total_mse = 0
         for (batch,) in loader:
@@ -32,8 +42,16 @@ def train_sae_from_payload(payload_path, epochs=100):
             total_mse += loss.item()
 
         if (epoch + 1) % 10 == 0:
-            print(
-                f"SAE Epoch [{epoch+1}/{epochs}] | MSE: {total_mse/len(loader):.6f}")
+            pct = ((epoch + 1) / epochs) * 100
+            bar_len = 30
+            filled = int(bar_len * (epoch + 1) / epochs)
+            bar = "█" * filled + "░" * (bar_len - filled)
+            avg_mse = total_mse / len(loader)
+            print(f"  [{bar}] Epoch {epoch+1:3d}/{epochs} | MSE: {avg_mse:.6f} | {pct:5.1f}%")
+
+    print("\n" + "="*70)
+    print("  [OK] SAE Training Complete!")
+    print("="*70 + "\n")
 
     torch.save(sae.state_dict(), "sae/universal_sae.pth")
 

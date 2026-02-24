@@ -34,7 +34,7 @@ def load_trained_models(mlp_path="mlp/perfect_mlp.pth", sae_path="sae/universal_
 def plot_steering_basis_compass(file_path="steering_basis.pt"):
     """Visualizes the geometric relationship (orthogonality) of logic vectors."""
     if not os.path.exists(file_path):
-        print(f"Skipping Compass: {file_path} not found.")
+        print(f"  [!] Skipping Compass - {file_path} not found.")
         return
 
     data = torch.load(file_path, map_location='cpu')
@@ -64,7 +64,7 @@ def plot_steering_basis_compass(file_path="steering_basis.pt"):
 def plot_steering_performance(pkl_path="alpha_sweep_results.pkl"):
     """Generates heatmaps and the Pareto Frontier from sweep data."""
     if not os.path.exists(pkl_path):
-        print(f"Skipping Performance Plots: {pkl_path} not found.")
+        print(f"  [!] Skipping Performance Plots - {pkl_path} not found.")
         return
 
     df = pd.read_pickle(pkl_path)
@@ -94,7 +94,7 @@ def plot_steering_performance(pkl_path="alpha_sweep_results.pkl"):
 def plot_logit_lens_automated(mlp, sae, feature_log="feature_subsets.pt"):
     """Maps the causal impact of SAE features directly to the MLP scalar output."""
     if not os.path.exists(feature_log):
-        print(f"Skipping Logit-Lens: {feature_log} not found.")
+        print(f"  [!] Skipping Logit-Lens - {feature_log} not found.")
         return
 
     subsets = torch.load(feature_log)
@@ -122,19 +122,27 @@ def plot_logit_lens_automated(mlp, sae, feature_log="feature_subsets.pt"):
 
 # --- EXECUTION ---
 if __name__ == '__main__':
-    print("[Phase III] Generating Visualization Suite...")
+    print("\n" + "="*70)
+    print("  PHASE III: GENERATING VISUALIZATION SUITE")
+    print("="*70 + "\n")
     
     # 1. Geometry
+    print("  -> Generating Steering Basis Compass...")
     plot_steering_basis_compass()
     
     # 2. Performance & Trade-offs
+    print("  -> Generating Performance Heatmaps & Pareto Frontier...")
     plot_steering_performance()
     
     # 3. Causality & Attribution
+    print("  -> Generating Logit-Lens Visualizations...")
     try:
         mlp_model, sae_model = load_trained_models()
         plot_logit_lens_automated(mlp_model, sae_model)
     except Exception as e:
-        print(f"Logit-Lens failed during model load: {e}")
+        print(f"  [FAIL] Logit-Lens failed during model load: {e}")
 
-    print("[Done] All visualizations exported to current directory.")
+    print("\n" + "="*70)
+    print("  [OK] VISUALIZATION SUITE COMPLETE")
+    print("  All visualizations exported to current directory")
+    print("="*70 + "\n")
