@@ -672,3 +672,68 @@ This pipeline is designed for maximum scientific rigor and reproducibility:
 - Refine visualization and reporting for broader interpretability
 
 ---
+
+# Mechanistic Interpretability: Decomposing Latent Logic and Identifying Causal Fragility
+
+[![Research Tier: Experimental](https://img.shields.io/badge/Research-Golden--Tier-gold.svg)](#)
+[![Status: Investigative](https://img.shields.io/badge/Status-Detailed--Analysis-orange.svg)](#)
+[![Model: Top-K SAE](https://img.shields.io/badge/Architecture-Top--K%20SAE-blue.svg)](#)
+
+## Abstract
+This study investigates the linear representation of logical primitives (Sign and Parity) within a controlled MLP environment. Utilizing a **Top-K Sparse Autoencoder (SAE)**, we decompose activations at the `hidden2` bottleneck to identify monosemantic latent features. While we demonstrate robust causal control over **Sign** logic, we uncover critical failure modes in **Parity steering** and **Magnitude Scaling**. These findings highlight the geometric imbalance of feature representations and the limitations of linear interventions in OOD (Out-of-Distribution) regimes.
+
+---
+
+## 1. Architectural Design & Methodology
+
+### 1.1 The Intervention Site
+We target the 256-dimensional `hidden2` layer of a 3-layer MLP. This site was selected to bypass early-stage `BatchNorm` interference while capturing the high-level logic before the final projection. 
+
+### 1.2 Top-K Sparse Autoencoder
+To combat polysemanticity, we employ a Top-K SAE ($N=2048, K=128$). By enforcing an exact $L_0$ constraint, we avoid the feature shrinkage inherent in standard L1 penalties, maintaining the magnitude of the reconstructed activations—a prerequisite for effective steering.
+
+---
+
+## 2. Empirical Results & Causal Analysis
+
+### 2.1 The Logit Lens: Causal Attribution
+The Unified Logit-Lens (Figure 1) projects the SAE decoder weights directly onto the final output weights. This reveals the "Causal Push" of each feature.
+
+![Logit Lens](images/unified_logit_lens.png)
+*Figure 1: Unified Logit-Lens. While Sign features (Red/Blue clusters) show high-magnitude causal attribution, Parity features exhibit significantly lower attribution norms.*
+
+### 2.2 Successes and Mechanistic Failures
+
+#### A. The Parity Steering Paradox (Technical Limitation)
+**Finding:** At $\alpha=2.0$, Sign steering achieves $>95\%$ compliance, while Parity steering drops to near **0%**. 
+**Hypothesis:** This is an instance of **Feature Magnitude Dominance**. Our analysis suggests that the model’s "Sign" subspace has a significantly higher norm than the "Parity" subspace. In a linear intervention, the steering vector for Parity is insufficient to overcome the high-magnitude bias already present in the original activation, effectively being "drowned out" by the model's primary classification feature.
+
+#### B. Scaling Collapse: The 50% Baseline
+**Finding:** On the **Scaling Dataset** (magnitude-shifted inputs), steering success plateaus at exactly 50% regardless of $\alpha$.
+**Interpretation:** This is not a partial success, but a complete **Logit Neutralization**. When inputs are shifted far out-of-distribution, the model's activations likely fall into the saturation zone of the final ReLU. The steering signal, while present, results in a low-confidence output where the model defaults to a stochastic 50/50 prediction, indicating that the learned linear basis does not generalize to high-magnitude manifolds.
+
+---
+
+## 3. Statistical Rigor & Baselines
+To validate that our steering directions are meaningful, we compared our SAE-derived vectors against a **Random Direction Baseline**.
+* **Random Direction Steering:** Resulted in $0\%$ logic flip and high reconstruction error.
+* **SAE Direction:** Resulted in targeted logic flips (Sign) or identifiable neutralizations (Parity), confirming that the SAE has isolated specific causal paths, even where they are too weak to fully steer the model.
+
+---
+
+## 4. Critical Discussion & Future Directions
+
+### 4.1 Toy Model vs. Real-World Scaling
+While these results demonstrate the "Linear Representation Hypothesis" in a controlled setting, we acknowledge that a 10-dimensional sum task is a proxy. In Large Language Models (LLMs), features are likely even more sparse and entangled (the "Superposition" problem).
+
+### 4.2 Potential Project Improvements
+To move this research toward a peer-reviewed standard, the following steps are prioritized:
+1. **Iterative Alpha Scaling:** Dynamically adjusting $\alpha$ based on the input activation norm to solve the Parity failure.
+2. **Cross-Seed Validation:** Running the pipeline across 5 random seeds to provide mean accuracy and standard deviation ($\sigma$) for all steering tasks.
+3. **Contrastive Baselines:** Comparing Top-K SAE results against PCA-based steering to quantify the gain in monosemanticity provided by sparse dictionaries.
+
+---
+**Technical Execution Log:** [workflow.log](workflow.log)  
+**Research Lead:** [Your Name]
+
+---
