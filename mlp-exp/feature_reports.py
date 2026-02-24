@@ -1,3 +1,4 @@
+
 import os
 import torch
 import pandas as pd
@@ -11,138 +12,325 @@ import numpy as np
 from mlp.mlp_definition import InterpretabilityMLP
 from sae.sae_definition import SparseAutoencoder
 
+
 def load_trained_models(mlp_path="mlp/perfect_mlp.pth", sae_path="sae/universal_sae.pth"):
     """Explicitly instantiates classes and loads weights."""
     # Instantiate MLP based on architecture
     mlp = InterpretabilityMLP()
     mlp_state = torch.load(mlp_path, map_location='cpu')
     # Standard load_state_dict handling
-    mlp.load_state_dict(mlp_state if 'layers.output.weight' in mlp_state else mlp_state.get('model_state_dict', mlp_state))
+    mlp.load_state_dict(mlp_state if 'layers.output.weight' in mlp_state else mlp_state.get(
+        'model_state_dict', mlp_state))
     mlp.eval()
 
     # Instantiate SAE based on architecture
     # Defaulting to dict_size=2048 as per Phase I context
-    sae = SparseAutoencoder(input_dim=512, dict_size=2048) 
+    sae = SparseAutoencoder(input_dim=512, dict_size=2048)
     sae_state = torch.load(sae_path, map_location='cpu')
-    sae.load_state_dict(sae_state if 'decoder.weight' in sae_state else sae_state.get('sae_state_dict', sae_state))
+    sae.load_state_dict(sae_state if 'decoder.weight' in sae_state else sae_state.get(
+        'sae_state_dict', sae_state))
     sae.eval()
-    
+
     return mlp, sae
 
 # --- 2. THE CONCEPT COMPASS (Geometry) ---
 
-def plot_steering_basis_compass(file_path="steering_basis.pt"):
-    """Visualizes the geometric relationship (orthogonality) of logic vectors."""
+
+def plot_elegant_dual_compass(file_path="steering_basis.pt"):
+    """
+    Generates a professional dual-view compass.
+    Left: High-detail quadrant zoom (fixed scale).
+    Right: Adaptive professional overview (window-fitted).
+    """
     if not os.path.exists(file_path):
-        print(f"  [!] Skipping Compass - {file_path} not found.")
+        print(f"Skipping Compass: {file_path} not found.")
         return
 
     data = torch.load(file_path, map_location='cpu')
     v_sign, v_parity = data["v_sign"], data["v_parity"]
 
-    # Define the 4 cardinal logic directions
+    # 1. Coordinate Setup
     vectors = torch.stack([v_sign, -v_sign, v_parity, -v_parity]).cpu().numpy()
-    labels = ["Positive (+Sign)", "Negative (-Sign)", "Odd (+Parity)", "Even (-Parity)"]
+    labels = ["Positive (+Sign)", "Negative (-Sign)",
+              "Odd (+Parity)", "Even (-Parity)"]
     colors = ["#2ecc71", "#e74c3c", "#3498db", "#f1c40f"]
 
-    # Project to 2D for visualization
+    # PCA Projection
     pca = PCA(n_components=2)
     coords = pca.fit_transform(vectors)
+    max_mag = np.max(np.linalg.norm(coords, axis=1))
 
-    plt.figure(figsize=(10, 10), facecolor='white')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8), facecolor='white')
+
+    # 2. Left Plot: Quadrant Detail (Strict Zoom)
+    # Scaled to capture the very center of the basis interaction
     for i in range(len(labels)):
-        plt.quiver(0, 0, coords[i, 0], coords[i, 1], angles='xy', scale_units='xy', scale=1,
-                   color=colors[i], label=labels[i], width=0.01)
-        plt.text(coords[i, 0]*1.15, coords[i, 1]*1.15, labels[i], fontweight='bold', ha='center')
+        ax1.quiver(0, 0, coords[i, 0], coords[i, 1],
+                   angles='xy', scale_units='xy', scale=1,
+                   color=colors[i], width=0.018, headwidth=4, headlength=5)
 
-    plt.axhline(0, color='black', lw=1, alpha=0.2); plt.axvline(0, color='black', lw=1, alpha=0.2)
-    plt.title("Phase III: The Logic Basis Compass\nGeometric Disentanglement", fontsize=14, pad=20)
-    plt.savefig("concept_compass.png", dpi=300); plt.close()
+    # Recreating the quadrant-focused scale (approx 0.05 per side)
+    detail_limit = max_mag * 0.05
+    ax1.set_xlim(-detail_limit, detail_limit)
+    ax1.set_ylim(-detail_limit, detail_limit)
+    ax1.set_title("Zoomed In: Quadrant Detail",
+                  fontsize=12, fontweight='bold', pad=15)
+
+    # 3. Right Plot: Professional Overview (Adaptive Scaling)
+    # Scaled just enough to show arrows and legend elegantly
+    for i in range(len(labels)):
+        ax2.quiver(0, 0, coords[i, 0], coords[i, 1],
+                   angles='xy', scale_units='xy', scale=1,
+                   color=colors[i], label=labels[i],
+                   width=0.012, headwidth=5, headlength=7)
+
+        # Professional label placement at vector tips
+        ax2.text(coords[i, 0] * 1.05, coords[i, 1] * 1.05, labels[i],
+                 fontsize=9, fontweight='bold', ha='center', va='center')
+
+    overview_limit = max_mag * 1.35  # Provides breathing room for legend/labels
+    ax2.set_xlim(-overview_limit, overview_limit)
+    ax2.set_ylim(-overview_limit, overview_limit)
+    ax2.set_title("Adaptive Overview: Basis Compass",
+                  fontsize=12, fontweight='bold', pad=15)
+    ax2.legend(loc='upper right', frameon=True, shadow=True, fontsize=9)
+
+    # 4. Global Styling
+    for ax in [ax1, ax2]:
+        circle = plt.Circle((0, 0), max_mag, color='gray',
+                            fill=False, linestyle='--', alpha=0.15)
+        ax.add_artist(circle)
+        ax.axhline(0, color='black', lw=0.8, alpha=0.3)
+        ax.axvline(0, color='black', lw=0.8, alpha=0.3)
+        ax.set_aspect('equal')
+        ax.grid(True, linestyle=':', alpha=0.2)
+
+    plt.suptitle("Phase III: Logic Basis Geometric Disentanglement",
+                 fontsize=15, y=0.98)
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.savefig("images/concept_compass_elegant.png",
+                dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print("     Successfully generated concept compass with zoomed-in & zoomed out views.")
 
 # --- 3. LOGIC HEATMAP & PARETO (Performance) ---
 
-def plot_steering_performance(pkl_path="alpha_sweep_results.pkl"):
-    """Generates heatmaps and the Pareto Frontier from sweep data."""
+
+def plot_steering_performance_unified(pkl_path="alpha_sweep_results.pkl"):
+    """
+    Generates:
+    1. Unified Nested Heatmap (Dataset > Metric)
+    2. Unified Pareto Frontier (Compliance across all datasets)
+    """
     if not os.path.exists(pkl_path):
         print(f"  [!] Skipping Performance Plots - {pkl_path} not found.")
         return
 
     df = pd.read_pickle(pkl_path)
+    os.makedirs("images", exist_ok=True)
 
-    # 3a. Heatmaps (Success Rate by Alpha)
-    for dataset in df['dataset'].unique():
-        ds_df = df[df['dataset'] == dataset]
-        plot_data = ds_df.melt(id_vars=['alpha'], value_vars=['sign_acc', 'parity_acc'],
-                               var_name='Metric', value_name='Success_Rate')
-        pivot_df = plot_data.pivot(index='Metric', columns='alpha', values='Success_Rate')
+    # --- 1. Define Custom Ordering & Categories ---
+    dataset_order = ["Interpolation", "Extrapolation", "Scaling", "Precision"]
+    
+    # Convert to categorical to force the sort order
+    df['dataset'] = pd.Categorical(df['dataset'], categories=dataset_order, ordered=True)
+    df = df.sort_values(['dataset', 'alpha'])
 
-        plt.figure(figsize=(12, 4))
-        sns.heatmap(pivot_df, annot=True, cmap="YlGnBu", fmt=".1f", vmin=0, vmax=100)
-        plt.title(f"Steering Success Rate: {dataset}")
-        plt.savefig(f"heatmap_{dataset}.png", bbox_inches='tight'); plt.close()
+    # --- 2. Unified Nested Heatmap ---
+    melted_df = df.melt(
+        id_vars=['dataset', 'alpha'], 
+        value_vars=['sign_acc', 'parity_acc'],
+        var_name='Metric', 
+        value_name='Success_Rate'
+    )
 
-    # 3b. Pareto Frontier (Intensity vs Accuracy)
-    interp_df = df[df['dataset'] == 'Interpolation'].sort_values('alpha')
+    # Pivot with Dataset as the primary index and Metric as the sub-index
+    unified_pivot = melted_df.pivot_table(
+        index=['dataset', 'Metric'], 
+        columns='alpha', 
+        values='Success_Rate',
+        sort=False # Preserves our categorical sort
+    )
+
+    # Clean up Metric labels (sign_acc -> Sign, parity_acc -> Parity)
+    new_labels = [label.replace('_acc', '').capitalize() for label in unified_pivot.index.levels[1]]
+    unified_pivot.index = unified_pivot.index.set_levels(new_labels, level=1)
+
+    # --- 3. Visualization ---
+    plot_height = len(df['dataset'].unique()) * 1.8 + 1
+    plt.figure(figsize=(14, plot_height))
+    
+    sns.heatmap(
+        unified_pivot, 
+        annot=True, 
+        cmap="YlGnBu", 
+        fmt=".1f", 
+        vmin=0, 
+        vmax=100,
+        cbar_kws={'label': 'Success Rate %'},
+        linewidths=.5
+    )
+    
+    plt.title("Steering Performance: Hierarchical Dataset Breakdown", fontsize=14, pad=20)
+    plt.xlabel("Alpha (Steering Strength)", fontsize=12)
+    plt.ylabel("Dataset | Control Metric", fontsize=12)
+    
+    # Save the consolidated heatmap
+    plt.savefig("images/unified_logic_heatmap.png", bbox_inches='tight', dpi=300)
+    plt.close()
+
+    # --- 3. UNIFIED PARETO FRONTIER ---
     plt.figure(figsize=(10, 6))
-    plt.plot(interp_df['alpha'], interp_df['total_acc'], 'o--', color='purple', label='Compliance')
-    plt.title("Steering Pareto: Success vs. Alpha Intensity")
-    plt.xlabel("Alpha (Steering Strength)"); plt.ylabel("Total Accuracy %")
-    plt.savefig("pareto_frontier.png"); plt.close()
+    
+    # Professional color palette for lines
+    colors = ["#8e44ad", "#e67e22", "#2980b9", "#27ae60"] # Purple, Orange, Blue, Green
+    
+    for i, dataset in enumerate(dataset_order):
+        ds_df = df[df['dataset'] == dataset].sort_values('alpha')
+        
+        if not ds_df.empty:
+            plt.plot(
+                ds_df['alpha'], 
+                ds_df['total_acc'], 
+                marker='o', 
+                linestyle='--', 
+                linewidth=2,
+                color=colors[i], 
+                label=f'Compliance ({dataset})'
+            )
+
+    plt.title("Unified Steering Pareto: Compliance vs. Alpha Intensity", fontsize=14, pad=15)
+    plt.xlabel("Alpha (Steering Strength)", fontsize=12)
+    plt.ylabel("Total Accuracy (%)", fontsize=12)
+    plt.ylim(0, 105) # Ensure visibility of 100% baseline
+    plt.grid(True, linestyle=':', alpha=0.6)
+    
+    # Legend placement to avoid overlapping lines
+    plt.legend(loc='lower right', frameon=True, shadow=True, fontsize=10)
+    
+    plt.tight_layout()
+    plt.savefig("images/unified_pareto_frontier.png", dpi=300)
+    plt.close()
+
+    print("     Successfully generated unified heatmap and Pareto frontier in /images.")
 
 # --- 4. LOGIT-LENS (Causality) ---
 
-def plot_logit_lens_automated(mlp, sae, feature_log="feature_subsets.pt"):
-    """Maps the causal impact of SAE features directly to the MLP scalar output."""
+
+def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
+    """
+    Generates a single, sorted heatmap of causal attribution across all categories
+    to visualize feature overlaps and functional correlations.
+    """
     if not os.path.exists(feature_log):
-        print(f"  [!] Skipping Logit-Lens - {feature_log} not found.")
+        print(f"Skipping Unified Lens: {feature_log} not found.")
         return
 
     subsets = torch.load(feature_log)
 
+    # 1. Collect and sort the union of all identified features
+    all_ids = []
     for label, ids in subsets.items():
-        clean_ids = [int(i) for i in (ids if isinstance(ids, (list, np.ndarray)) else list(ids))]
-        
-        if "Distinct" in label and len(clean_ids) > 0:
-            with torch.no_grad():
-                # Logic: [Output Weight] @ [Hidden2 Weight] @ [SAE Decoder]
-                # Hidden2 (512 -> 256), Output (256 -> 1)
-                w_out = mlp.layers['output'].weight # (1, 256)
-                w_hid2 = mlp.layers['hidden2'].weight # (256, 512)
-                w_dec = sae.decoder.weight # (512, 2048)
-                
-                # Combined attribution: (1, 512) @ (512, 2048) -> (1, 2048)
-                w_causal = (w_out @ w_hid2) @ w_dec
-                impact = w_causal[0, clean_ids].cpu().numpy()
+        all_ids.extend([int(i) for i in (ids if isinstance(
+            ids, (list, np.ndarray)) else list(ids))])
 
-            plt.figure(figsize=(max(len(clean_ids)*0.8, 8), 3))
-            sns.heatmap(impact.reshape(1, -1), annot=True, cmap="RdBu_r", center=0,
-                        xticklabels=clean_ids, yticklabels=[label])
-            plt.title(f"Logit-Lens: Causal Attribution ({label})")
-            plt.savefig(f"logit_lens_{label.replace(' ', '_')}.png", bbox_inches='tight'); plt.close()
+    unique_ids = sorted(list(set(all_ids)))
+
+    if not unique_ids:
+        print("No features found in log.")
+        return
+
+    # 2. Compute Global Causal Attribution (Logit Lens)
+    # Math: (Output Weight @ Hidden2 Weight) @ SAE Decoder Weight
+    # Layers per architecture: hidden2 (512->256), output (256->1)
+    with torch.no_grad():
+        w_out = mlp.layers['output'].weight  # (1, 256)
+        w_hid2 = mlp.layers['hidden2'].weight  # (256, 512)
+        w_dec = sae.decoder.weight  # (512, 2048)
+
+        # Combined Projection: (1, 512) @ (512, 2048) -> (1, 2048)
+        w_causal = (w_out @ w_hid2) @ w_dec
+
+        # Extract weights only for our unique features of interest
+        global_impacts = w_causal[0, unique_ids].cpu().numpy()
+
+    # 3. Build the Matrix for Visualization
+    # We want to see how these specific weights relate to our category labels
+    matrix_data = []
+    category_labels = []
+
+    for label, ids in subsets.items():
+        # Clean the current category IDs
+        cat_ids = [int(i) for i in (ids if isinstance(
+            ids, (list, np.ndarray)) else list(ids))]
+
+        # Create a row where we only show the impact if the feature is in this category
+        # This highlights overlaps between categories across the same column
+        row = []
+        for fid in unique_ids:
+            if fid in cat_ids:
+                # Find the index of this feature in our global_impacts array
+                idx = unique_ids.index(fid)
+                row.append(global_impacts[idx])
+            else:
+                # Leave blank to emphasize category-specific features
+                row.append(np.nan)
+
+        matrix_data.append(row)
+        category_labels.append(label)
+
+    # 4. Plotting the Unified Heatmap
+    plt.figure(figsize=(max(len(unique_ids) * 0.6, 12),
+               len(category_labels) * 1.2))
+
+    # Use a diverging colormap (RdBu_r) where Red=Positive impact, Blue=Negative impact
+    sns.heatmap(matrix_data,
+                annot=True,
+                fmt=".2f",
+                cmap="RdBu_r",
+                center=0,
+                xticklabels=unique_ids,
+                yticklabels=category_labels,
+                cbar_kws={'label': 'Causal Push to Output'})
+
+    plt.title("Unified Logit-Lens: Causal Attribution & Feature Overlap",
+              fontsize=15, pad=20)
+    plt.xlabel("SAE Feature ID (Sorted Index)", fontsize=12)
+    plt.ylabel("Discovered Logic Category", fontsize=12)
+
+    plt.savefig("images/unified_logit_lens.png", bbox_inches='tight')
+    plt.close()
+    print(
+        f"     Success: Unified Logit-Lens generated for {len(unique_ids)} features.")
+
 
 # --- EXECUTION ---
 if __name__ == '__main__':
     print("\n" + "="*70)
     print("  PHASE III: GENERATING VISUALIZATION SUITE")
     print("="*70 + "\n")
-    
+
+    # Create images directory
+    os.makedirs("images", exist_ok=True)
+
     # 1. Geometry
     print("  -> Generating Steering Basis Compass...")
-    plot_steering_basis_compass()
-    
+    plot_elegant_dual_compass()
+
     # 2. Performance & Trade-offs
     print("  -> Generating Performance Heatmaps & Pareto Frontier...")
-    plot_steering_performance()
-    
+    plot_steering_performance_unified()
+
     # 3. Causality & Attribution
     print("  -> Generating Logit-Lens Visualizations...")
     try:
         mlp_model, sae_model = load_trained_models()
-        plot_logit_lens_automated(mlp_model, sae_model)
+        plot_unified_logit_lens(mlp_model, sae_model)
     except Exception as e:
         print(f"  [FAIL] Logit-Lens failed during model load: {e}")
 
     print("\n" + "="*70)
     print("  [OK] VISUALIZATION SUITE COMPLETE")
-    print("  All visualizations exported to current directory")
+    print("  All visualizations exported to images/ folder")
     print("="*70 + "\n")

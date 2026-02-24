@@ -98,25 +98,28 @@ def get_top_k_features_by_group(mlp_path, sae_path, excel_path, k=5):
 def get_distinct_features_by_group():
 
     k = 50
-    features_by_group, raw_data = get_top_k_features_by_group(
+    feats_by_grp, raw_data = get_top_k_features_by_group(
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "dataset/mlp_test.xlsx", k=k
     )
 
     print("\n" + "="*70)
     print(f"  TOP-{k} FEATURES PER CONCEPT GROUP")
     print("="*70)
-    for group, feats in features_by_group.items():
+    for group, feats in feats_by_grp.items():
         print(f"  {group:12} : {feats}")
 
+    all_feats = feats_by_grp["pos_odd"] + feats_by_grp["pos_even"] + \
+        feats_by_grp["neg_odd"] + feats_by_grp["neg_even"]
+
     # Logic to find "Pure" features
-    pos_feats = set(features_by_group['pos_odd']) & set(
-        features_by_group['pos_even'])
-    neg_feats = set(features_by_group['neg_odd']) & set(
-        features_by_group['neg_even'])
-    odd_feats = set(features_by_group['pos_odd']) & set(
-        features_by_group['neg_odd'])
-    eve_feats = set(features_by_group['pos_even']) & set(
-        features_by_group['neg_even'])
+    pos_feats = set(feats_by_grp['pos_odd']) & set(
+        feats_by_grp['pos_even'])
+    neg_feats = set(feats_by_grp['neg_odd']) & set(
+        feats_by_grp['neg_even'])
+    odd_feats = set(feats_by_grp['pos_odd']) & set(
+        feats_by_grp['neg_odd'])
+    eve_feats = set(feats_by_grp['pos_even']) & set(
+        feats_by_grp['neg_even'])
 
     # Common Features
     common_feats = pos_feats & odd_feats & neg_feats & eve_feats
@@ -143,11 +146,28 @@ def get_distinct_features_by_group():
 
     # 1. Create the dictionary of discovered feature IDs
     feature_subsets = {
-        "Distinct Even Parity": eve_only_feats,  # Replace with your actual variable names
+        # Mixed features
+        "Mixed Positive Odd": feats_by_grp["pos_odd"],
+        "Mixed Positive Even": feats_by_grp["pos_even"],
+        "Mixed Negative Odd": feats_by_grp["neg_odd"],
+        "Mixed Negative Even": feats_by_grp["neg_even"],
+
+        # All top features across groups
+        "All": all_feats,
+
+        "Positive (Odd/Even)": pos_feats,
+        "Negative (Odd/Even)": neg_feats,
+        "Odd Parity (Pos/Neg)": odd_feats,
+        "Even Parity (Pos/Neg)": eve_feats,
+
+        "Universal Common": common_feats,
+
+        # Distinct features
+        "Distinct Even Parity": eve_only_feats,
         "Distinct Odd Parity": odd_only_feats,
         "Distinct Positive Sign": pos_only_feats,
         "Distinct Negative Sign": neg_only_feats,
-        "Universal Common": common_feats
+
     }
 
     # 2. Save the dictionary for Phase III
@@ -272,12 +292,12 @@ if __name__ == "__main__":
     # 4. Metric: Orthogonality Check
     cosine_sim = torch.nn.functional.cosine_similarity(
         v_sign.unsqueeze(0), v_parity.unsqueeze(0))
-    
+
     print("\n" + "="*70)
     print("  STEERING BASIS VECTORS ANALYSIS")
     print("="*70)
     print(f"  Sign-Parity Cosine Similarity: {cosine_sim.item():.4f}")
-    print(f"  Interpretation: Near 0.0 → concepts are perfectly disentangled ✓")
+    print("  Interpretation: Near 0.0 → concepts are perfectly disentangled ✓")
     print("="*70 + "\n")
 
     torch.save({"v_sign": v_sign, "v_parity": v_parity}, "steering_basis.pt")
