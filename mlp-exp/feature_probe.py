@@ -13,7 +13,7 @@ def get_universal_vectors(harvested_data, sae_model):
     tags = payload["labels"]
 
     # 2. Load SAE (Ensure parameters match your training config)
-    sae = SparseAutoencoder(input_dim=512, dict_size=2048, k=20).cuda()
+    sae = SparseAutoencoder(input_dim=256, dict_size=2048).cuda()
     sae.load_state_dict(torch.load(sae_model))
 
     sae.eval()
@@ -47,7 +47,7 @@ def get_top_k_features_by_group(mlp_path, sae_path, excel_path, k=5):
     # CRITICAL FIX: Set to evaluation mode to handle Batch Norm with batch size 1
     mlp.eval()
 
-    sae = SparseAutoencoder(input_dim=512, dict_size=2048).to(device)
+    sae = SparseAutoencoder(input_dim=256, dict_size=2048).to(device)
     sae.load_state_dict(torch.load(sae_path))
     sae.eval()  # SAE should also be in eval mode
 
@@ -70,7 +70,7 @@ def get_top_k_features_by_group(mlp_path, sae_path, excel_path, k=5):
 
             # Get SAE latents
             _ = mlp(input_data)
-            hidden_acts = mlp.activations['layer2']
+            hidden_acts = mlp.activations['hidden2']
             _, latents = sae(hidden_acts)
 
             # Record non-zero activations (Top-K ensures most are 0)
@@ -95,9 +95,8 @@ def get_top_k_features_by_group(mlp_path, sae_path, excel_path, k=5):
     return results, group_features
 
 
-def get_distinct_features_by_group():
+def get_distinct_features_by_group(k=128):
 
-    k = 50
     feats_by_grp, raw_data = get_top_k_features_by_group(
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "dataset/mlp_test.xlsx", k=k
     )
@@ -184,51 +183,62 @@ def get_distinct_features_by_group():
 
 
 class UniversalSteeringController:
-    def __init__(self, mlp_path, sae_path, basis_path):
+    def __init__(self, mlp_path, sae_path, basis_path, latent_stats_path=None):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load MLP
+        # 1. Load MLP & Correct Architecture Mapping
         self.mlp = InterpretabilityMLP().to(self.device)
-        self.mlp.load_state_dict(torch.load(mlp_path))
+        self.mlp.load_state_dict(torch.load(
+            mlp_path, map_location=self.device))
         self.mlp.eval()
 
-        # Load SAE
+        # 2. Load SAE (Input 512 matches 'hidden1' output)
         self.sae = SparseAutoencoder(
-            input_dim=512, dict_size=2048, k=20).to(self.device)
-        self.sae.load_state_dict(torch.load(sae_path))
+            input_dim=256, dict_size=2048).to(self.device)
+        self.sae.load_state_dict(torch.load(
+            sae_path, map_location=self.device))
         self.sae.eval()
 
-        # Load Steering Basis (v_sign, v_parity)
-        basis = torch.load(basis_path)
-        self.v_sign = basis['v_sign'].to(self.device)
-        self.v_parity = basis['v_parity'].to(self.device)
+        # 3. Load Steering Basis
+        basis = torch.load(basis_path, map_location=self.device)
+        v_sign = basis['v_sign']
+        v_parity = basis['v_parity']
+
+        # 4. Feature Normalization Logic
+        # If you haven't saved stats, we use a small epsilon.
+        # Ideally, load the 'std' of these features calculated during Phase II.
+        if latent_stats_path:
+            stats = torch.load(latent_stats_path)
+            std_sign = stats.get('sign_std', 1.0)
+            std_parity = stats.get('parity_std', 1.0)
+        else:
+            std_sign = 1.0
+            std_parity = 0.25
+
+        # CHANGE THESE NAMES:
+        self.norm_v_sign = v_sign / (std_sign + 1e-8)
+        self.norm_v_parity = v_parity / (std_parity + 1e-8)
 
     def steer_input(self, input_tensor, target_sign=0, target_parity=0, alpha=2.0):
         with torch.no_grad():
-            # 1. Get Baseline from MLP
+            # 1. Forward pass to injection site
             _ = self.mlp(input_tensor.to(self.device))
-            raw_neurons = self.mlp.activations['layer2']
+            raw_neurons = self.mlp.activations['hidden2']
 
-            # 2. Map Neurons to SAE Latents
-            # If using your provided SAE definition, use self.sae.encoder or forward
+            # 2. Get baseline latents
             _, baseline_latents = self.sae(raw_neurons)
 
-            # 3. Apply Meta-Steering logic
+            # 3. Apply Steering using the correctly named normalized vectors
             steered_latents = baseline_latents + \
-                (target_sign * alpha * self.v_sign) + \
-                (target_parity * alpha * self.v_parity)
+                (target_sign * alpha * self.norm_v_sign) + \
+                (target_parity * alpha * self.norm_v_parity)
 
-            # 4. Reconstruct to Neuron Space (the steered 'layer2')
+            # 4. Decode and finish MLP pass
             steered_neurons = self.sae.decoder(steered_latents)
-
-            # 5. Manually finish the MLP forward pass using self.layers dictionary
-            # We start from hidden2 because steered_neurons replaces the old layer2
-            x = self.mlp.relu(self.mlp.layers['hidden2'](steered_neurons))
-            output = self.mlp.layers['output'](x)
+            output = self.mlp.layers['output'](self.mlp.relu(steered_neurons))
 
             return output.item()
-
 
 def run_surgical_ablation(input_vals, target_features, label):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -238,7 +248,7 @@ def run_surgical_ablation(input_vals, target_features, label):
     mlp.load_state_dict(torch.load("mlp/perfect_mlp.pth"))
     mlp.eval()
 
-    sae = SparseAutoencoder(input_dim=512, dict_size=2048).to(device)
+    sae = SparseAutoencoder(input_dim=256, dict_size=2048).to(device)
     sae.load_state_dict(torch.load("sae/universal_sae.pth"))
     sae.eval()
 
@@ -252,7 +262,7 @@ def run_surgical_ablation(input_vals, target_features, label):
         baseline_out = mlp(input_tensor).item()
 
         # Capture activations and pass through SAE
-        hidden_acts = mlp.activations['layer2']
+        hidden_acts = mlp.activations['hidden2']
         _, latents = sae(hidden_acts)
 
         # 4. ABLATION: Zero out the "Hero Features"
@@ -264,14 +274,8 @@ def run_surgical_ablation(input_vals, target_features, label):
         # This is mathematically equivalent to sae.decoder(ablated_latents)
         reconstructed_acts = sae.decoder(ablated_latents)
 
-        # 6. FINAL PASS: Manually compute the rest of your MLP's forward pass
-        # We pick up right AFTER where 'layer2' was saved
-
-        # Pass through hidden2
-        x = mlp.relu(mlp.layers['hidden2'](reconstructed_acts))
-
         # Pass through output
-        final_out = mlp.layers['output'](x).item()
+        final_out = mlp.layers['output'](mlp.relu(reconstructed_acts)).item()
 
     print(f"\n{'-'*70}")
     print(f"  [*] ABLATION TEST: {label}")
@@ -302,7 +306,7 @@ if __name__ == "__main__":
 
     torch.save({"v_sign": v_sign, "v_parity": v_parity}, "steering_basis.pt")
 
-    dist_feat = get_distinct_features_by_group()
+    dist_feat = get_distinct_features_by_group(k=64)
 
     test_inputs = [
         ([6, 3, 0, 6, 2, 2, 8, 5, 3, 3], -3),  # Original: -3 (Negative, Odd)

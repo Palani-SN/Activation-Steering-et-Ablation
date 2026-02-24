@@ -11,11 +11,11 @@ def train_to_perfection():
 
     # Use include_concepts=True to handle the new balanced dataset format
     train_loader = load_excel_to_dataloader(
-        "dataset/mlp_train.xlsx", batch_size=64, include_concepts=True)
+        "dataset/mlp_train.xlsx", batch_size=256, include_concepts=True)
     val_loader = load_excel_to_dataloader(
-        "dataset/mlp_val.xlsx", batch_size=64, include_concepts=True)
+        "dataset/mlp_val.xlsx", batch_size=256, include_concepts=True)
     test_loader = load_excel_to_dataloader(
-        "dataset/mlp_test.xlsx", batch_size=64, include_concepts=True)
+        "dataset/mlp_test.xlsx", batch_size=256, include_concepts=True)
 
     epochs = 500
     optimizer = optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
@@ -29,11 +29,11 @@ def train_to_perfection():
     criterion = nn.MSELoss()
 
     print("\n" + "="*70)
-    print(f"  PHASE I: TRAINING MLP TO INTERPRETABLE PERFECTION")
+    print("  PHASE I: TRAINING MLP TO INTERPRETABLE PERFECTION")
     print("="*70)
     print(f"  Device: {device}")
     print(f"  Total Epochs: {epochs}")
-    print(f"  Batch Size: 64")
+    print("  Batch Size: 256")
     print("="*70 + "\n")
 
     for epoch in range(epochs):

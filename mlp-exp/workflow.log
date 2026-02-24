@@ -5,7 +5,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
 ============================================================================
 
 [1/8] > Activating Environment...
-Γ£ô Environment activated successfully
+[OK] Environment activated successfully
 
 [2/8] > Generating Dataset...
 
@@ -15,19 +15,19 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
 
 
   ⚙ Generating 8000 balanced samples (2000 per group)...
-    Progress: pos_odd: 1242/2000 | pos_even: 987/2000 | neg_odd: 1284/2000 | neg_even: 991/2000
-    Progress: pos_odd: 2000/2000 | pos_even: 1996/2000 | neg_odd: 2000/2000 | neg_even: 1969/2000
-    ✓ mlp_train.xlsx       |  8000 samples generated
+    Progress: pos_odd: 1314/2000 | pos_even: 970/2000 | neg_odd: 1224/2000 | neg_even: 1000/2000
+    Progress: pos_odd: 2000/2000 | pos_even: 1952/2000 | neg_odd: 2000/2000 | neg_even: 1958/2000
+    [OK] mlp_train.xlsx       |  8000 samples generated
 
   ⚙ Generating 1000 balanced samples (250 per group)...
-    ✓ mlp_val.xlsx         |  1000 samples generated
+    [OK] mlp_val.xlsx         |  1000 samples generated
 
   ⚙ Generating 1000 balanced samples (250 per group)...
-    ✓ mlp_test.xlsx        |  1000 samples generated
+    [OK] mlp_test.xlsx        |  1000 samples generated
 
 ======================================================================
 
-Γ£ô Primary dataset generated
+[OK] Primary dataset generated
 
 ======================================================================
   OOD VARIANT DATASET GENERATION
@@ -36,25 +36,25 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   → Generating Interpolation Test (In-Distribution)...
 
   ⚙ Generating 1000 balanced samples (250 per group)...
-    ✓ interp_test.xlsx     |  1000 samples | Range: [0-4]
+    [OK] interp_test.xlsx     |  1000 samples | Range: [0-4]
   → Generating Extrapolation Test (Out-of-Distribution)...
 
   ⚙ Generating 1000 balanced samples (250 per group)...
-    ✓ extrap_test.xlsx     |  1000 samples | Range: [10-19]
+    [OK] extrap_test.xlsx     |  1000 samples | Range: [10-19]
   → Generating Scaling Test (Magnitude Shift)...
 
   ⚙ Generating 1000 balanced samples (250 per group)...
-    ✓ scaling_test.xlsx    |  1000 samples | Range: [100-109]
+    [OK] scaling_test.xlsx    |  1000 samples | Range: [100-109]
   → Generating Precision Test (Float Values)...
 
   ⚙ Generating 1000 balanced samples (250 per group)...
-    ✓ precision_test.xlsx  |  1000 samples | Range: [0.0-9.0]
+    [OK] precision_test.xlsx  |  1000 samples | Range: [0.0-9.0]
 
 ======================================================================
   ✓ ALL OOD VARIANT DATASETS GENERATED
 ======================================================================
 
-Γ£ô OOD variants generated
+[OK] OOD variants generated
 
 [3/8] > Training MLP...
 
@@ -63,19 +63,19 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
 ======================================================================
   Device: cuda
   Total Epochs: 500
-  Batch Size: 64
+  Batch Size: 256
 ======================================================================
 
-  [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] Epoch  50/500 | Val MSE: 0.330955 |  10.0%
-  [██████░░░░░░░░░░░░░░░░░░░░░░░░] Epoch 100/500 | Val MSE: 0.206530 |  20.0%
-  [█████████░░░░░░░░░░░░░░░░░░░░░] Epoch 150/500 | Val MSE: 0.136002 |  30.0%
-  [████████████░░░░░░░░░░░░░░░░░░] Epoch 200/500 | Val MSE: 0.083977 |  40.0%
-  [███████████████░░░░░░░░░░░░░░░] Epoch 250/500 | Val MSE: 0.071442 |  50.0%
-  [██████████████████░░░░░░░░░░░░] Epoch 300/500 | Val MSE: 0.053813 |  60.0%
-  [█████████████████████░░░░░░░░░] Epoch 350/500 | Val MSE: 0.054904 |  70.0%
-  [████████████████████████░░░░░░] Epoch 400/500 | Val MSE: 0.036214 |  80.0%
-  [███████████████████████████░░░] Epoch 450/500 | Val MSE: 0.044322 |  90.0%
-  [██████████████████████████████] Epoch 500/500 | Val MSE: 0.041061 | 100.0%
+  [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] Epoch  50/500 | Val MSE: 0.401592 |  10.0%
+  [██████░░░░░░░░░░░░░░░░░░░░░░░░] Epoch 100/500 | Val MSE: 0.152763 |  20.0%
+  [█████████░░░░░░░░░░░░░░░░░░░░░] Epoch 150/500 | Val MSE: 0.122486 |  30.0%
+  [████████████░░░░░░░░░░░░░░░░░░] Epoch 200/500 | Val MSE: 0.084947 |  40.0%
+  [███████████████░░░░░░░░░░░░░░░] Epoch 250/500 | Val MSE: 0.120985 |  50.0%
+  [██████████████████░░░░░░░░░░░░] Epoch 300/500 | Val MSE: 0.055016 |  60.0%
+  [█████████████████████░░░░░░░░░] Epoch 350/500 | Val MSE: 0.065830 |  70.0%
+  [████████████████████████░░░░░░] Epoch 400/500 | Val MSE: 0.037043 |  80.0%
+  [███████████████████████████░░░] Epoch 450/500 | Val MSE: 0.026060 |  90.0%
+  [██████████████████████████████] Epoch 500/500 | Val MSE: 0.028748 | 100.0%
 
 ======================================================================
   FINAL PERFORMANCE ANALYSIS
@@ -83,16 +83,14 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
 
   Per-Concept Metrics:
   ------------------------------------------------------------------
-  → Pos Odd              | MSE: 0.031675 | Samples:  250
-  → Pos Even             | MSE: 0.033509 | Samples:  250
-  → Neg Odd              | MSE: 0.046693 | Samples:  250
-  → Neg Even             | MSE: 0.054490 | Samples:  250
+  → Pos Odd              | MSE: 0.022369 | Samples:  250
+  → Pos Even             | MSE: 0.025112 | Samples:  250
+  → Neg Odd              | MSE: 0.029563 | Samples:  250
+  → Neg Even             | MSE: 0.027047 | Samples:  250
   ------------------------------------------------------------------
-  ✓ Total Test MSE: 0.041592
+  ✓ Total Test MSE: 0.026023
 ======================================================================
 
-'/b' is not recognized as an internal or external command,
-operable program or batch file.
 [OK] MLP trained to perfection
 
 [4/8] > Harvesting Activations...
@@ -118,21 +116,21 @@ operable program or batch file.
 ======================================================================
   Input Dimension: 512
   Dictionary Size: 2048
-  Sparsity (k): 20
+  Sparsity (k): 128
   Total Epochs: 100
   Batch Size: 128
 ======================================================================
 
-  [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] Epoch  10/100 | MSE: 0.003838 |  10.0%
-  [██████░░░░░░░░░░░░░░░░░░░░░░░░] Epoch  20/100 | MSE: 0.001762 |  20.0%
-  [█████████░░░░░░░░░░░░░░░░░░░░░] Epoch  30/100 | MSE: 0.000975 |  30.0%
-  [████████████░░░░░░░░░░░░░░░░░░] Epoch  40/100 | MSE: 0.000586 |  40.0%
-  [███████████████░░░░░░░░░░░░░░░] Epoch  50/100 | MSE: 0.000385 |  50.0%
-  [██████████████████░░░░░░░░░░░░] Epoch  60/100 | MSE: 0.000262 |  60.0%
-  [█████████████████████░░░░░░░░░] Epoch  70/100 | MSE: 0.000192 |  70.0%
-  [████████████████████████░░░░░░] Epoch  80/100 | MSE: 0.000154 |  80.0%
-  [███████████████████████████░░░] Epoch  90/100 | MSE: 0.000127 |  90.0%
-  [██████████████████████████████] Epoch 100/100 | MSE: 0.000108 | 100.0%
+  [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] Epoch  10/100 | MSE: 0.085462 |  10.0%
+  [██████░░░░░░░░░░░░░░░░░░░░░░░░] Epoch  20/100 | MSE: 0.036246 |  20.0%
+  [█████████░░░░░░░░░░░░░░░░░░░░░] Epoch  30/100 | MSE: 0.023539 |  30.0%
+  [████████████░░░░░░░░░░░░░░░░░░] Epoch  40/100 | MSE: 0.017156 |  40.0%
+  [███████████████░░░░░░░░░░░░░░░] Epoch  50/100 | MSE: 0.013903 |  50.0%
+  [██████████████████░░░░░░░░░░░░] Epoch  60/100 | MSE: 0.011877 |  60.0%
+  [█████████████████████░░░░░░░░░] Epoch  70/100 | MSE: 0.009971 |  70.0%
+  [████████████████████████░░░░░░] Epoch  80/100 | MSE: 0.010394 |  80.0%
+  [███████████████████████████░░░] Epoch  90/100 | MSE: 0.008772 |  90.0%
+  [██████████████████████████████] Epoch 100/100 | MSE: 0.007471 | 100.0%
 
 ======================================================================
   [OK] SAE Training Complete!
@@ -145,7 +143,7 @@ operable program or batch file.
 ======================================================================
   STEERING BASIS VECTORS ANALYSIS
 ======================================================================
-  Sign-Parity Cosine Similarity: -0.0752
+  Sign-Parity Cosine Similarity: -0.0653
   Interpretation: Near 0.0 → concepts are perfectly disentangled ✓
 ======================================================================
 
@@ -157,187 +155,187 @@ operable program or batch file.
 
 
 ======================================================================
-  TOP-50 FEATURES PER CONCEPT GROUP
+  TOP-64 FEATURES PER CONCEPT GROUP
 ======================================================================
-  pos_odd      : [462, 1687, 50, 0, 699, 1308, 1904, 1236, 1689, 478, 911, 1669, 678, 1525, 1635, 101, 1866, 1327, 1022, 1013, 10, 1322, 521, 418, 20, 1799, 910, 1848, 1218, 844, 518, 290, 331, 26, 943, 458, 956, 1145, 1824, 412, 246, 556, 1279, 1991, 1956, 1579, 1051, 1590, 1167, 821]
-  pos_even     : [1687, 462, 50, 0, 1236, 1308, 699, 1689, 1866, 1904, 478, 911, 1635, 101, 1022, 1525, 678, 1327, 1669, 1013, 1799, 943, 1956, 418, 1322, 412, 910, 844, 290, 1848, 521, 458, 518, 1145, 1218, 10, 1579, 331, 1279, 1210, 956, 20, 1824, 1590, 1051, 1167, 1561, 246, 1557, 821]
-  neg_odd      : [1687, 462, 1308, 0, 50, 10, 699, 1866, 521, 911, 478, 1525, 458, 1904, 1345, 1669, 1327, 1236, 910, 678, 1635, 1689, 1991, 1799, 1013, 1322, 1557, 1022, 1956, 1218, 1145, 1848, 418, 556, 617, 290, 1177, 943, 1964, 1954, 26, 412, 42, 101, 1561, 1458, 953, 1279, 246, 1210]
-  neg_even     : [1687, 462, 0, 1308, 699, 10, 478, 1866, 521, 1525, 1345, 1991, 458, 911, 50, 1236, 910, 1669, 1689, 1904, 1327, 1322, 1013, 1022, 617, 1635, 1799, 1557, 1507, 290, 1848, 1561, 1145, 556, 20, 678, 1956, 943, 1279, 26, 418, 1458, 412, 1210, 1964, 1218, 1824, 1954, 1051, 723]
+  neg_even     : [471, 1412, 1694, 456, 1163, 563, 1297, 1911, 1144, 1839, 1264, 1284, 1720, 308, 164, 2041, 935, 788, 220, 917, 1260, 250, 1002, 1519, 1122, 1661, 914, 1277, 956, 1150, 550, 671, 1546, 1705, 1020, 373, 1959, 983, 321, 1674, 213, 1905, 1988, 1555, 755, 1486, 1114, 1511, 112, 322, 1405, 2023, 697, 174, 663, 979, 554, 684, 1652, 1423, 1035, 1138, 1568, 1691]
+  pos_even     : [456, 563, 917, 1002, 1297, 1694, 1284, 788, 471, 1720, 935, 373, 1163, 1546, 1839, 1144, 2041, 164, 1150, 956, 1911, 1412, 308, 1264, 220, 914, 1661, 983, 1260, 1486, 1705, 1020, 1905, 250, 671, 550, 1122, 1277, 213, 1114, 1519, 1555, 321, 1959, 1988, 1405, 755, 1511, 979, 1674, 112, 697, 322, 174, 1568, 1317, 1652, 554, 1035, 1423, 668, 1691, 276, 258]
+  neg_odd      : [471, 456, 1694, 1297, 1412, 563, 1163, 1839, 1911, 1284, 1144, 1264, 1720, 308, 164, 935, 788, 1260, 1002, 917, 2041, 220, 250, 1277, 1519, 1122, 1661, 956, 914, 1546, 1150, 550, 671, 373, 1705, 983, 1020, 213, 1959, 1674, 321, 1905, 1988, 1555, 1486, 1114, 755, 1511, 1405, 322, 112, 2023, 697, 174, 979, 1568, 554, 276, 1423, 684, 1652, 663, 209, 1035]
+  pos_odd      : [456, 1297, 1002, 917, 1284, 788, 1694, 563, 471, 1163, 1720, 1150, 1144, 373, 2041, 1839, 935, 164, 1911, 1546, 956, 1412, 1260, 1264, 308, 220, 914, 1661, 250, 213, 983, 671, 1486, 1122, 1277, 1519, 1905, 550, 1705, 1020, 1114, 1959, 1555, 321, 1988, 755, 1674, 322, 979, 1652, 1317, 1511, 697, 1405, 112, 174, 668, 1691, 276, 554, 1568, 1035, 365, 684]
 
-  [OK] Universal Common Features: [0, 10, 50, 290, 412, 418, 458, 462, 478, 521, 678, 699, 910, 911, 943, 1013, 1022, 1145, 1218, 1236, 1279, 1308, 1322, 1327, 1525, 1635, 1669, 1687, 1689, 1799, 1848, 1866, 1904, 1956]
+  [OK] Universal Common Features: [112, 164, 174, 213, 220, 250, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
 
 ======================================================================
   IDENTIFIED FEATURE SUBSETS (INTERSECTIONS)
 ======================================================================
-  Positive Sign Features : [0, 10, 20, 50, 101, 246, 290, 331, 412, 418, 458, 462, 478, 518, 521, 678, 699, 821, 844, 910, 911, 943, 956, 1013, 1022, 1051, 1145, 1167, 1218, 1236, 1279, 1308, 1322, 1327, 1525, 1579, 1590, 1635, 1669, 1687, 1689, 1799, 1824, 1848, 1866, 1904, 1956]
-  Odd Parity Features    : [0, 10, 26, 50, 101, 246, 290, 412, 418, 458, 462, 478, 521, 556, 678, 699, 910, 911, 943, 1013, 1022, 1145, 1218, 1236, 1279, 1308, 1322, 1327, 1525, 1635, 1669, 1687, 1689, 1799, 1848, 1866, 1904, 1956, 1991]
-  Negative Sign Features : [0, 10, 26, 50, 290, 412, 418, 458, 462, 478, 521, 556, 617, 678, 699, 910, 911, 943, 1013, 1022, 1145, 1210, 1218, 1236, 1279, 1308, 1322, 1327, 1345, 1458, 1525, 1557, 1561, 1635, 1669, 1687, 1689, 1799, 1848, 1866, 1904, 1954, 1956, 1964, 1991]
-  Even Parity Features   : [0, 10, 20, 50, 290, 412, 418, 458, 462, 478, 521, 678, 699, 910, 911, 943, 1013, 1022, 1051, 1145, 1210, 1218, 1236, 1279, 1308, 1322, 1327, 1525, 1557, 1561, 1635, 1669, 1687, 1689, 1799, 1824, 1848, 1866, 1904, 1956]
+  Positive Sign Features : [112, 164, 174, 213, 220, 250, 276, 308, 321, 322, 373, 456, 471, 550, 554, 563, 668, 671, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1317, 1405, 1412, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1691, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
+  Odd Parity Features    : [112, 164, 174, 213, 220, 250, 276, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 684, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
+  Negative Sign Features : [112, 164, 174, 213, 220, 250, 308, 321, 322, 373, 456, 471, 550, 554, 563, 663, 671, 684, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1423, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2023, 2041]
+  Even Parity Features   : [112, 164, 174, 213, 220, 250, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1423, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1691, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
 
   DISTINCT (Non-Common) Features:
-    → Even Parity        : [20, 1051, 1210, 1557, 1561, 1824]
-    → Positive Sign      : [20, 101, 246, 331, 518, 821, 844, 956, 1051, 1167, 1579, 1590, 1824]
-    → Odd Parity        : [26, 101, 246, 556, 1991]
-    → Negative Sign      : [26, 556, 617, 1210, 1345, 1458, 1557, 1561, 1954, 1964, 1991]
+    → Even Parity        : [1423, 1691]
+    → Positive Sign      : [276, 668, 1317, 1691]
+    → Odd Parity        : [276, 684]
+    → Negative Sign      : [663, 684, 1423, 2023]
 
-  [OK] Successfully saved 5 feature groups
+  [OK] Successfully saved 14 feature groups
 ======================================================================
 
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Negative Sign
 ----------------------------------------------------------------------
-  Original Output :  -2.9118
-  Ablated Output  :   1.9755
-  Causal Shift    :  +4.8873
+  Original Output :  -2.9554
+  Ablated Output  :  -2.3885
+  Causal Shift    :  +0.5669
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Odd Parity
 ----------------------------------------------------------------------
-  Original Output :  -2.9118
-  Ablated Output  :  -0.6959
-  Causal Shift    :  +2.2159
+  Original Output :  -2.9554
+  Ablated Output  :  -2.6826
+  Causal Shift    :  +0.2728
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Negative Sign
 ----------------------------------------------------------------------
-  Original Output :  -1.8773
-  Ablated Output  :  -1.7948
-  Causal Shift    :  +0.0826
+  Original Output :  -1.9418
+  Ablated Output  :  -1.5403
+  Causal Shift    :  +0.4015
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Even Parity
 ----------------------------------------------------------------------
-  Original Output :  -1.8773
-  Ablated Output  :  -1.7948
-  Causal Shift    :  +0.0826
+  Original Output :  -1.9418
+  Ablated Output  :  -1.8394
+  Causal Shift    :  +0.1025
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Negative Sign
 ----------------------------------------------------------------------
-  Original Output :  -0.8736
-  Ablated Output  :  -0.0832
-  Causal Shift    :  +0.7904
+  Original Output :  -1.2463
+  Ablated Output  :  -0.4631
+  Causal Shift    :  +0.7832
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Odd Parity
 ----------------------------------------------------------------------
-  Original Output :  -0.8736
-  Ablated Output  :  -0.0832
-  Causal Shift    :  +0.7904
+  Original Output :  -1.2463
+  Ablated Output  :  -0.8457
+  Causal Shift    :  +0.4006
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Positive Sign
 ----------------------------------------------------------------------
-  Original Output :   0.9133
-  Ablated Output  :   0.8927
-  Causal Shift    :  -0.0206
+  Original Output :   1.0493
+  Ablated Output  :   1.2253
+  Causal Shift    :  +0.1760
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Odd Parity
 ----------------------------------------------------------------------
-  Original Output :   0.9133
-  Ablated Output  :   0.7841
-  Causal Shift    :  -0.1293
+  Original Output :   1.0493
+  Ablated Output  :   1.3480
+  Causal Shift    :  +0.2988
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Positive Sign
 ----------------------------------------------------------------------
-  Original Output :   1.9374
-  Ablated Output  :   1.7164
-  Causal Shift    :  -0.2210
+  Original Output :   2.0447
+  Ablated Output  :   1.9863
+  Causal Shift    :  -0.0583
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Even Parity
 ----------------------------------------------------------------------
-  Original Output :   1.9374
-  Ablated Output  :   1.7164
-  Causal Shift    :  -0.2210
+  Original Output :   2.0447
+  Ablated Output  :   2.0002
+  Causal Shift    :  -0.0445
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Positive Sign
 ----------------------------------------------------------------------
-  Original Output :   2.9093
-  Ablated Output  :   0.2241
-  Causal Shift    :  -2.6852
+  Original Output :   2.9848
+  Ablated Output  :   2.5762
+  Causal Shift    :  -0.4086
 
 ----------------------------------------------------------------------
   [*] ABLATION TEST: Killing Odd Parity
 ----------------------------------------------------------------------
-  Original Output :   2.9093
-  Ablated Output  :   2.8434
-  Causal Shift    :  -0.0659
+  Original Output :   2.9848
+  Ablated Output  :   2.9277
+  Causal Shift    :  -0.0571
 Actual Input: [6, 3, 0, 6, 2, 2, 8, 5, 3, 3], Expected Output: -3
 (Negative, Odd)
-Predicted Output: -2.6772947311401367
-    Steer to Positive: 2.3273768424987793
-    Steer to Negative: -5.819215774536133
-    Steer to Odd: -2.5505423545837402
-    Steer to Even: -2.7038021087646484
-        Steer to Positive-Odd: 2.5190978050231934
-        Steer to Positive-Even: 2.13565731048584
-        Steer to Negative-Odd: -5.692462921142578
-        Steer to Negative-Even: -5.9459686279296875
+Predicted Output: -2.9386818408966064
+    Steer to Positive: 2.130302667617798
+    Steer to Negative: -7.92651891708374
+    Steer to Odd: -3.033329486846924
+    Steer to Even: -2.8168652057647705
+        Steer to Positive-Odd: 3.1151351928710938
+        Steer to Positive-Even: 1.3784656524658203
+        Steer to Negative-Odd: -8.54263973236084
+        Steer to Negative-Even: -7.248631954193115
 --------------------------------------------------
 Actual Input: [6, 3, 2, 7, 1, 7, 5, 7, 9, 1], Expected Output: -2
 (Negative, Even)
-Predicted Output: -1.7947732210159302
-    Steer to Positive: 5.221097946166992
-    Steer to Negative: -6.153261184692383
-    Steer to Odd: -2.290864944458008
-    Steer to Even: -1.2186177968978882
-        Steer to Positive-Odd: 4.492917537689209
-        Steer to Positive-Even: 5.949276447296143
-        Steer to Negative-Odd: -5.818332195281982
-        Steer to Negative-Even: -6.45854377746582
+Predicted Output: -1.9530975818634033
+    Steer to Positive: 3.869197368621826
+    Steer to Negative: -7.540857791900635
+    Steer to Odd: -1.099125862121582
+    Steer to Even: -2.836071729660034
+        Steer to Positive-Odd: 4.088858604431152
+        Steer to Positive-Even: 3.290046453475952
+        Steer to Negative-Odd: -6.960860252380371
+        Steer to Negative-Even: -8.424320220947266
 --------------------------------------------------
 Actual Input: [0, 8, 4, 6, 2, 5, 3, 8, 4, 0], Expected Output: -1
 (Negative, Odd)
-Predicted Output: -1.1515123844146729
-    Steer to Positive: 4.558579921722412
-    Steer to Negative: -6.526034355163574
-    Steer to Odd: -1.1645660400390625
-    Steer to Even: -1.1384574174880981
-        Steer to Positive-Odd: 4.471770286560059
-        Steer to Positive-Even: 4.793510437011719
-        Steer to Negative-Odd: -5.937573432922363
-        Steer to Negative-Even: -7.061295986175537
+Predicted Output: -1.2479429244995117
+    Steer to Positive: 4.015659809112549
+    Steer to Negative: -5.795529365539551
+    Steer to Odd: -1.6482809782028198
+    Steer to Even: -0.5594378113746643
+        Steer to Positive-Odd: 4.143949031829834
+        Steer to Positive-Even: 3.9050586223602295
+        Steer to Negative-Odd: -6.345935344696045
+        Steer to Negative-Even: -5.244359970092773
 --------------------------------------------------
 Actual Input: [8, 3, 9, 0, 0, 7, 2, 2, 7, 0], Expected Output: 1
 (Positive, Odd)
-Predicted Output: 0.8927325010299683
-    Steer to Positive: 3.919236183166504
-    Steer to Negative: -2.3836798667907715
-    Steer to Odd: 1.0054806470870972
-    Steer to Even: 0.5731674432754517
-        Steer to Positive-Odd: 4.031984806060791
-        Steer to Positive-Even: 3.8064889907836914
-        Steer to Negative-Odd: -1.2780975103378296
-        Steer to Negative-Even: -3.5242233276367188
+Predicted Output: 1.1347333192825317
+    Steer to Positive: 3.3062684535980225
+    Steer to Negative: -1.2541240453720093
+    Steer to Odd: 0.984281599521637
+    Steer to Even: 1.1748955249786377
+        Steer to Positive-Odd: 2.5043580532073975
+        Steer to Positive-Even: 4.108178615570068
+        Steer to Negative-Odd: -1.2942614555358887
+        Steer to Negative-Even: -1.2139619588851929
 --------------------------------------------------
 Actual Input: [1, 3, 4, 6, 3, 4, 9, 0, 6, 0], Expected Output: 2
 (Positive, Even)
-Predicted Output: 1.9180915355682373
-    Steer to Positive: 6.184360027313232
-    Steer to Negative: -2.618032693862915
-    Steer to Odd: 1.6570848226547241
-    Steer to Even: 2.1790952682495117
-        Steer to Positive-Odd: 5.853554725646973
-        Steer to Positive-Even: 6.457119941711426
-        Steer to Negative-Odd: -2.3460116386413574
-        Steer to Negative-Even: -2.7474231719970703
+Predicted Output: 2.013178586959839
+    Steer to Positive: 5.108932018280029
+    Steer to Negative: -2.1598103046417236
+    Steer to Odd: 1.9407999515533447
+    Steer to Even: 1.9339020252227783
+        Steer to Positive-Odd: 5.260583400726318
+        Steer to Positive-Even: 4.957279682159424
+        Steer to Negative-Odd: -3.111201047897339
+        Steer to Negative-Even: -1.2083981037139893
 --------------------------------------------------
 Actual Input: [6, 5, 2, 2, 1, 7, 2, 5, 4, 1], Expected Output: 3
 (Positive, Odd)
-Predicted Output: 2.9363410472869873
-    Steer to Positive: 8.50388240814209
-    Steer to Negative: -3.13395094871521
-    Steer to Odd: 2.373836040496826
-    Steer to Even: 3.4988460540771484
-        Steer to Positive-Odd: 7.776007652282715
-        Steer to Positive-Even: 9.231329917907715
-        Steer to Negative-Odd: -3.5073909759521484
-        Steer to Negative-Even: -2.9111475944519043
+Predicted Output: 3.0288503170013428
+    Steer to Positive: 7.978793621063232
+    Steer to Negative: -2.423591375350952
+    Steer to Odd: 3.2539312839508057
+    Steer to Even: 2.7084670066833496
+        Steer to Positive-Odd: 8.21077823638916
+        Steer to Positive-Even: 7.887023448944092
+        Steer to Negative-Odd: -2.2331135272979736
+        Steer to Negative-Even: -3.13457989692688
 --------------------------------------------------
 [OK] Feature analysis complete
 
@@ -347,15 +345,17 @@ Predicted Output: 2.9363410472869873
   PHASE III: STEERING VALIDATION & COMPLIANCE TESTING
 ======================================================================
 
+  -> Calibrating feature scales using dataset/interp_test.xlsx...
+  [OK] Calibration: Sign_std=180.1455, Parity_std=23.6596
   1. Testing Interpolation (In-Distribution)...
   → Validating 1000 samples from interp_test...
 
 ======================================================================
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
-  [OK] Sign Flip Success   :  90.40%
-  [OK] Parity Flip Success :  24.50%
-  [OK] Full Quadrant Flip  :  45.50%
+  [OK] Sign Flip Success   :   0.00%
+  [OK] Parity Flip Success :   0.50%
+  [OK] Full Quadrant Flip  :   0.00%
 ======================================================================
 
   2. Testing Extrapolation (Out-of-Distribution)...
@@ -364,9 +364,9 @@ Predicted Output: 2.9363410472869873
 ======================================================================
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
-  [OK] Sign Flip Success   :  49.10%
+  [OK] Sign Flip Success   :  21.30%
   [OK] Parity Flip Success :  49.70%
-  [OK] Full Quadrant Flip  :  23.10%
+  [OK] Full Quadrant Flip  :  11.10%
 ======================================================================
 
   3. Testing Scaling (Magnitude Shift)...
@@ -375,9 +375,9 @@ Predicted Output: 2.9363410472869873
 ======================================================================
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
-  [OK] Sign Flip Success   :  50.00%
-  [OK] Parity Flip Success :  51.30%
-  [OK] Full Quadrant Flip  :  24.50%
+  [OK] Sign Flip Success   :  50.70%
+  [OK] Parity Flip Success :  49.80%
+  [OK] Full Quadrant Flip  :  23.90%
 ======================================================================
 
   4. Testing Precision (Float Values)...
@@ -386,9 +386,9 @@ Predicted Output: 2.9363410472869873
 ======================================================================
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
-  [OK] Sign Flip Success   :  81.80%
-  [OK] Parity Flip Success :  32.90%
-  [OK] Full Quadrant Flip  :  40.30%
+  [OK] Sign Flip Success   :   1.20%
+  [OK] Parity Flip Success :  12.20%
+  [OK] Full Quadrant Flip  :   0.00%
 ======================================================================
 
 
@@ -403,27 +403,35 @@ Predicted Output: 2.9363410472869873
   Testing Alpha: 4.0...
   Testing Alpha: 8.0...
   Testing Alpha: 16.0...
+  Testing Alpha: 20.0...
+  Testing Alpha: 32.0...
+  Testing Alpha: 64.0...
+  Testing Alpha: 100.0...
+  Testing Alpha: 128.0...
+  Testing Alpha: 256.0...
+  Testing Alpha: 512.0...
+  Testing Alpha: 1024.0...
 sign_acc
-| dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |
-|:--------------|------:|------:|------:|------:|------:|------:|-------:|
-| Interpolation |   0   |  21.5 |  57.2 |  90.4 |  99.7 |   100 |  100   |
-| Extrapolation |  44.3 |  45.9 |  47.3 |  49.1 |  53.5 |    62 |   75.7 |
-| Scaling       |  50   |  50   |  50   |  50   |  50   |    50 |   50   |
-| Precision     |   2.2 |  26.2 |  48.1 |  81.8 |  99.5 |   100 |  100   |
+| dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |   20.0 |   32.0 |   64.0 |   100.0 |   128.0 |   256.0 |   512.0 |   1024.0 |
+|:--------------|------:|------:|------:|------:|------:|------:|-------:|-------:|-------:|-------:|--------:|--------:|--------:|--------:|---------:|
+| Interpolation |   0   |   0   |   0   |   0   |   0   |   0   |    0   |    0   |    0   |   11.9 |    32.4 |    44   |    89.8 |   100   |    100   |
+| Extrapolation |  21.2 |  21.2 |  21.3 |  21.3 |  21.3 |  21.5 |   22.1 |   22.4 |   23.6 |   28.7 |    32.5 |    36.8 |    54.5 |    81.5 |     99.4 |
+| Scaling       |  50.7 |  50.7 |  50.7 |  50.7 |  50.7 |  50.7 |   50.7 |   50.7 |   50.7 |   50.9 |    50.9 |    51   |    51.8 |    53.5 |     56.8 |
+| Precision     |   1.1 |   1.2 |   1.2 |   1.2 |   1.5 |   2.9 |    4.2 |    5.4 |    8.1 |   16.1 |    26.1 |    33.2 |    59.5 |    91.6 |    100   |
 parity_acc
-| dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |
-|:--------------|------:|------:|------:|------:|------:|------:|-------:|
-| Interpolation |   7   |   9   |  14.7 |  24.5 |  38.2 |  46.3 |   51.5 |
-| Extrapolation |  48.7 |  48.4 |  48.8 |  49.7 |  48.8 |  50.9 |   50.1 |
-| Scaling       |  51   |  52.6 |  52.2 |  51.3 |  47.6 |  55.3 |   52.5 |
-| Precision     |  24   |  24   |  26.1 |  32.9 |  41.6 |  47.7 |   50.1 |
+| dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |   20.0 |   32.0 |   64.0 |   100.0 |   128.0 |   256.0 |   512.0 |   1024.0 |
+|:--------------|------:|------:|------:|------:|------:|------:|-------:|-------:|-------:|-------:|--------:|--------:|--------:|--------:|---------:|
+| Interpolation |   0.5 |   0.5 |   0.5 |   0.5 |   0.5 |   0.6 |    0.9 |    0.7 |    1.7 |    7.9 |    21.3 |    31.9 |    50   |    46.5 |     48.1 |
+| Extrapolation |  49.7 |  49.6 |  49.7 |  49.7 |  50   |  50.1 |   50.7 |   50.6 |   51.2 |   51.3 |    53.3 |    53.1 |    53   |    53.3 |     52.8 |
+| Scaling       |  49.8 |  49.8 |  49.8 |  49.8 |  49.9 |  49.9 |   50.1 |   50.1 |   50.2 |   50.1 |    50   |    50   |    49.8 |    48.9 |     49.3 |
+| Precision     |  12.5 |  12.5 |  12.3 |  12.2 |  12.2 |  11.7 |   12.7 |   13.8 |   16.4 |   24.8 |    33.8 |    40.1 |    50.8 |    46.9 |     46   |
 total_acc
-| dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |
-|:--------------|------:|------:|------:|------:|------:|------:|-------:|
-| Interpolation |   0   |  12.7 |  23.4 |  45.5 |  54.2 |  51.8 |   48.6 |
-| Extrapolation |  19.7 |  20.9 |  22.8 |  23.1 |  26.2 |  28.6 |   35.5 |
-| Scaling       |  24.7 |  25.9 |  23.9 |  24.5 |  25.6 |  25.4 |   23.5 |
-| Precision     |   0.1 |  16.1 |  22.2 |  40.3 |  50.3 |  49.1 |   50.6 |
+| dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |   20.0 |   32.0 |   64.0 |   100.0 |   128.0 |   256.0 |   512.0 |   1024.0 |
+|:--------------|------:|------:|------:|------:|------:|------:|-------:|-------:|-------:|-------:|--------:|--------:|--------:|--------:|---------:|
+| Interpolation |   0   |   0   |   0   |   0   |   0   |   0   |    0   |    0   |    0.1 |    8.6 |    18.2 |    19.7 |    44.2 |    49.3 |     48.9 |
+| Extrapolation |  10.9 |  10.8 |  11   |  11.1 |  11.3 |  11.5 |   12.2 |   12.2 |   12.7 |   15.2 |    17.3 |    19.4 |    27.3 |    41.7 |     52.5 |
+| Scaling       |  23.9 |  23.9 |  23.9 |  23.9 |  24   |  23.7 |   23.3 |   23.6 |   24   |   23.6 |    24.6 |    25   |    25.9 |    28.3 |     29.1 |
+| Precision     |   0   |   0   |   0   |   0   |   0   |   0   |    0   |    0.4 |    2.1 |   11.3 |    14.5 |    15   |    29.1 |    45   |     51.9 |
 
 ======================================================================
   ✓ Heatmap report generated: alpha_sweep_results.xlsx
@@ -443,12 +451,15 @@ total_acc
 ======================================================================
 
   -> Generating Steering Basis Compass...
+     Successfully generated concept compass with zoomed-in & zoomed out views.
   -> Generating Performance Heatmaps & Pareto Frontier...
+     Successfully generated unified heatmap and Pareto frontier in /images.
   -> Generating Logit-Lens Visualizations...
+     Success: Unified Logit-Lens generated for 70 features.
 
 ======================================================================
   [OK] VISUALIZATION SUITE COMPLETE
-  All visualizations exported to current directory
+  All visualizations exported to images/ folder
 ======================================================================
 
 [OK] Reports generated successfully
@@ -460,10 +471,8 @@ total_acc
 
 ------------------------------------------------------
 Execution Summary:
-Started:  13:39:30
-Finished: 13:45:06
-Duration: 5 m 36 s
+Started:  20:17:16
+Finished: 20:23:52
+Duration: 6 m 35 s
 ------------------------------------------------------
 Press any key to continue . . .
-
-C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>

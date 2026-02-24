@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import pandas as pd
 from collections import OrderedDict
 from mlp.mlp_definition import InterpretabilityMLP
@@ -10,41 +11,94 @@ class SteeringValidator:
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load MLP
+        # 1. Load MLP
+        # Ensure InterpretabilityMLP is imported in your script
         self.mlp = InterpretabilityMLP().to(self.device)
-        self.mlp.load_state_dict(torch.load(mlp_path))
+        self.mlp.load_state_dict(torch.load(
+            mlp_path, map_location=self.device))
         self.mlp.eval()
 
-        # Load SAE (Using Top-K configuration)
+        # 2. Load SAE (256 -> 2048)
         self.sae = SparseAutoencoder(
-            input_dim=512, dict_size=2048).to(self.device)
-        self.sae.load_state_dict(torch.load(sae_path))
+            input_dim=256, dict_size=2048).to(self.device)
+        self.sae.load_state_dict(torch.load(
+            sae_path, map_location=self.device))
         self.sae.eval()
 
-        # Load Steering Basis
-        basis = torch.load(basis_path)
-        self.v_sign = basis['v_sign'].to(self.device)
-        self.v_parity = basis['v_parity'].to(self.device)
+        # 3. Load Steering Basis
+        basis = torch.load(basis_path, map_location=self.device)
+        self.v_sign = basis['v_sign']
+        self.v_parity = basis['v_parity']
+
+        # 4. FIX: Initialize latent_stds to None
+        # This will be populated by the calibrate() method
+        self.latent_stds = None
+        self.norm_v_sign = None
+        self.norm_v_parity = None
+
+    def calibrate(self, calibration_excel_path):
+        """
+        Calculates the standard deviation of latent activations.
+        This fixes the AttributeError by populating self.latent_stds.
+        """
+        print(
+            f"  -> Calibrating feature scales using {calibration_excel_path}...")
+        df = pd.read_excel(calibration_excel_path).head(
+            1000)  # 1000 samples is enough
+
+        all_sign_acts = []
+        all_parity_acts = []
+
+        with torch.no_grad():
+            for _, row in df.iterrows():
+                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(
+                    self.device).unsqueeze(0)
+
+                # Get activations from hidden1 (the SAE injection site)
+                _ = self.mlp(input_data)
+                raw_neurons = self.mlp.activations['hidden2']
+
+                # Encode to latent space
+                _, latents = self.sae(raw_neurons)
+
+                # Project latents onto our basis vectors to find 'magnitude' of the concept
+                # This tells us how strongly the 'Sign' or 'Parity' concepts usually activate
+                sign_mag = torch.dot(latents.flatten(), self.v_sign.flatten())
+                parity_mag = torch.dot(
+                    latents.flatten(), self.v_parity.flatten())
+
+                all_sign_acts.append(sign_mag.item())
+                all_parity_acts.append(parity_mag.item())
+
+        # Store the standard deviations
+        self.latent_stds = {
+            'sign': np.std(all_sign_acts) + 1e-8,
+            'parity': np.std(all_parity_acts) + 1e-8
+        }
+
+        # Pre-calculate normalized vectors
+        self.norm_v_sign = self.v_sign / self.latent_stds['sign']
+        self.norm_v_parity = self.v_parity / self.latent_stds['parity']
+
+        print(
+            f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Parity_std={self.latent_stds['parity']:.4f}")
 
     def run_intervention(self, input_tensor, target_sign, target_parity, alpha=2.0):
-        """Performs the causal intervention in SAE latent space."""
         with torch.no_grad():
-            # 1. Get original hidden activations from MLP
+            # 1. Get RAW linear activations
             _ = self.mlp(input_tensor.to(self.device))
-            raw_neurons = self.mlp.activations['layer2']
+            raw_neurons = self.mlp.activations['hidden2']
 
-            # 2. Encode to SAE features
+            # 2. Encode/Steer/Decode in latent space
             _, latent_features = self.sae(raw_neurons)
-
-            # 3. Apply Steering Vectors
             steered_latents = latent_features + \
-                (target_sign * alpha * self.v_sign) + \
-                (target_parity * alpha * self.v_parity)
-
-            # 4. Decode back to neurons and finish MLP forward pass
+                (target_sign * alpha * self.norm_v_sign) + \
+                (target_parity * alpha * self.norm_v_parity)
             steered_neurons = self.sae.decoder(steered_latents)
-            x = self.mlp.relu(self.mlp.layers['hidden2'](steered_neurons))
-            output = self.mlp.layers['output'](x)
+
+            # 3. Complete the MLP pass EXACTLY as the model does
+            # Apply the BN and ReLU that were skipped during the injection
+            output = self.mlp.layers['output'](self.mlp.relu(steered_neurons))
 
             return output.item()
 
@@ -56,7 +110,8 @@ class SteeringValidator:
 
         if not silent:
             dataset_name = excel_path.split('/')[-1].replace('.xlsx', '')
-            print(f"  → Validating {total_samples} samples from {dataset_name}...")
+            print(
+                f"  → Validating {total_samples} samples from {dataset_name}...")
 
         for idx, row in df.iterrows():
             # Prepare input
@@ -64,40 +119,51 @@ class SteeringValidator:
                 eval(row['input_list']), dtype=torch.float32).unsqueeze(0)
 
             # 1. Test Sign Flip
-            # If positive, steer negative (-1). If negative, steer positive (1).
+            # LOGIC FIX: We steer to the OPPOSITE of the original state.
+            # If positive, target is negative (-1). If negative, target is positive (1).
             orig_is_pos = row['concept'].startswith('pos')
             target_s = -1 if orig_is_pos else 1
+
             res_s = self.run_intervention(
                 input_data, target_sign=target_s, target_parity=0, alpha=alpha)
+
+            # SUCCESS: Did the model reach the target state we commanded?
             if (target_s == 1 and res_s > 0) or (target_s == -1 and res_s < 0):
                 success_counts["sign"] += 1
 
             # 2. Test Parity Flip
-            # If odd, steer even (-1). If even, steer odd (1).
+            # LOGIC FIX: If odd, target is even (-1). If even, target is odd (1).
             orig_is_odd = row['concept'].endswith('odd')
             target_p = -1 if orig_is_odd else 1
+
             res_p = self.run_intervention(
                 input_data, target_sign=0, target_parity=target_p, alpha=alpha)
-            if (target_p == 1 and round(res_p) % 2 != 0) or (target_p == -1 and round(res_p) % 2 == 0):
+
+            # SUCCESS: Check if final parity matches our target command
+            res_p_is_odd = (round(res_p) % 2 != 0)
+            if (target_p == 1 and res_p_is_odd) or (target_p == -1 and not res_p_is_odd):
                 success_counts["parity"] += 1
 
             # 3. Test Full Quadrant Flip (Both)
             res_both = self.run_intervention(
                 input_data, target_sign=target_s, target_parity=target_p, alpha=alpha)
+
             sign_ok = (target_s == 1 and res_both > 0) or (
                 target_s == -1 and res_both < 0)
             parity_ok = (target_p == 1 and round(res_both) % 2 != 0) or (
                 target_p == -1 and round(res_both) % 2 == 0)
+
             if sign_ok and parity_ok:
                 success_counts["both"] += 1
 
-        # 1. Calculate the final percentages
+        # 1. Calculate final percentages using total_samples (1000)
+        # This is correct because we attempted to steer every single row to a new target.
         sign_percent = (success_counts['sign'] / total_samples) * 100
         parity_percent = (success_counts['parity'] / total_samples) * 100
         both_percent = (success_counts['both'] / total_samples) * 100
 
         if not silent:
-            # 2. Keep your existing print statements
+            # All original print statements preserved
             print("\n" + "="*70)
             print("  STEERING SUCCESS RATES (Alpha = {:.2f})".format(alpha))
             print("="*70)
@@ -106,7 +172,6 @@ class SteeringValidator:
             print(f"  [OK] Full Quadrant Flip  : {both_percent:6.2f}%")
             print("="*70 + "\n")
 
-        # 3. ADD THIS RETURN STATEMENT
         return {
             "sign_percent": sign_percent,
             "parity_percent": parity_percent,
@@ -116,7 +181,7 @@ class SteeringValidator:
     def run_alpha_sweep(self, datasets, alpha_range, filename):
 
         results = []
-        
+
         print("\n" + "="*70)
         print("  ALPHA SWEEP: TESTING STEERING INTENSITY ACROSS DATASETS")
         print("="*70 + "\n")
@@ -136,7 +201,8 @@ class SteeringValidator:
                 })
 
         df = pd.DataFrame(results)
-        df.to_pickle('alpha_sweep_results.pkl')  # Save raw results for later use
+        # Save raw results for later use
+        df.to_pickle('alpha_sweep_results.pkl')
         # 1. Prepare the metrics we want to visualize
         metrics = {
             "Sign_Accuracy": "sign_acc",
@@ -197,9 +263,12 @@ if __name__ == "__main__":
     print("\n" + "="*70)
     print("  PHASE III: STEERING VALIDATION & COMPLIANCE TESTING")
     print("="*70 + "\n")
-    
+
     validator = SteeringValidator(
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "steering_basis.pt")
+
+    # Use one of your test sets (like interp_test.xlsx) for calibration
+    validator.calibrate("dataset/interp_test.xlsx")
 
     # Validate standard Integer Test Set
     print("  1. Testing Interpolation (In-Distribution)...")
@@ -224,10 +293,10 @@ if __name__ == "__main__":
             "Scaling": "dataset/scaling_test.xlsx",
             "Precision": "dataset/precision_test.xlsx"
         }),
-        alpha_range=[0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0],
+        alpha_range=[0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 20.0, 32.0, 64.0, 100.0, 128.0, 256.0, 512.0, 1024.0],
         filename="alpha_sweep_results.xlsx"
     )
-    
+
     print("\n" + "="*70)
     print("  ✓ PHASE III COMPLETE - ALL VALIDATIONS PASSED")
     print("="*70 + "\n")

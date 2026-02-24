@@ -1,6 +1,8 @@
 import torch.nn as nn
 
 # --- 2. The MLP Model ---
+
+
 class InterpretabilityMLP(nn.Module):
     def __init__(self):
         super().__init__()
@@ -8,7 +10,7 @@ class InterpretabilityMLP(nn.Module):
         self.layers = nn.ModuleDict({
             'input': nn.Linear(10, 256),
             'bn1': nn.BatchNorm1d(256),
-            'hidden1': nn.Linear(256, 512), # Wider layer for SAE injection
+            'hidden1': nn.Linear(256, 512),  # Wider layer for SAE injection
             'bn2': nn.BatchNorm1d(512),
             'hidden2': nn.Linear(512, 256),
             'output': nn.Linear(256, 1)
@@ -19,14 +21,16 @@ class InterpretabilityMLP(nn.Module):
     def forward(self, x):
         # Layer 1
         x = self.relu(self.layers['bn1'](self.layers['input'](x)))
-        
-        # Layer 2: THIS is where we will inject the SAE later
-        x = self.relu(self.layers['bn2'](self.layers['hidden1'](x)))
-        self.activations['layer2'] = x 
-        
-        # Layer 3
-        x = self.relu(self.layers['hidden2'](x))
-        
-        # Output
+
+        # Layer 2: Save the RAW linear output for the SAE
+        x = self.layers['hidden1'](x)
+
+        # Continue the MLP pass
+        x = self.relu(self.layers['bn2'](x))
+        x = self.layers['hidden2'](x)
+
+        self.activations['hidden2'] = x  # Use 'hidden1' to avoid confusion
+        x = self.relu(x)
+
         x = self.layers['output'](x)
         return x

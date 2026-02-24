@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class SparseAutoencoder(nn.Module):
-    def __init__(self, input_dim=512, dict_size=2048, k=20):
+    def __init__(self, input_dim=256, dict_size=2048, k=128):
         super().__init__()
         self.encoder = nn.Linear(input_dim, dict_size)
         self.decoder = nn.Linear(dict_size, input_dim)

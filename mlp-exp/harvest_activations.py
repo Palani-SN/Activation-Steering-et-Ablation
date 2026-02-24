@@ -16,7 +16,7 @@ def harvest_activations(model_path, dataloader, device="cuda"):
     print("  HARVESTING ACTIVATIONS FROM TRAINED MLP")
     print("="*70)
     print(f"  Device: {device}")
-    print(f"  Expected Samples: ~8000")
+    print("  Expected Samples: ~8000")
     print("="*70 + "\n")
     print(f"  -> Harvesting activations on {device}...")
     
@@ -29,7 +29,7 @@ def harvest_activations(model_path, dataloader, device="cuda"):
             _ = model(bx)
             
             # Capture hidden layer (512-dim)
-            acts = model.activations['layer2']
+            acts = model.activations['hidden2']
             
             all_acts.append(acts.cpu())
             all_labels.append(bg.cpu())

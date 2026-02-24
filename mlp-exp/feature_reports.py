@@ -25,7 +25,7 @@ def load_trained_models(mlp_path="mlp/perfect_mlp.pth", sae_path="sae/universal_
 
     # Instantiate SAE based on architecture
     # Defaulting to dict_size=2048 as per Phase I context
-    sae = SparseAutoencoder(input_dim=512, dict_size=2048)
+    sae = SparseAutoencoder(input_dim=256, dict_size=2048)
     sae_state = torch.load(sae_path, map_location='cpu')
     sae.load_state_dict(sae_state if 'decoder.weight' in sae_state else sae_state.get(
         'sae_state_dict', sae_state))
@@ -132,83 +132,89 @@ def plot_steering_performance_unified(pkl_path="alpha_sweep_results.pkl"):
 
     # --- 1. Define Custom Ordering & Categories ---
     dataset_order = ["Interpolation", "Extrapolation", "Scaling", "Precision"]
-    
+
     # Convert to categorical to force the sort order
-    df['dataset'] = pd.Categorical(df['dataset'], categories=dataset_order, ordered=True)
+    df['dataset'] = pd.Categorical(
+        df['dataset'], categories=dataset_order, ordered=True)
     df = df.sort_values(['dataset', 'alpha'])
 
     # --- 2. Unified Nested Heatmap ---
     melted_df = df.melt(
-        id_vars=['dataset', 'alpha'], 
+        id_vars=['dataset', 'alpha'],
         value_vars=['sign_acc', 'parity_acc'],
-        var_name='Metric', 
+        var_name='Metric',
         value_name='Success_Rate'
     )
 
     # Pivot with Dataset as the primary index and Metric as the sub-index
     unified_pivot = melted_df.pivot_table(
-        index=['dataset', 'Metric'], 
-        columns='alpha', 
+        index=['dataset', 'Metric'],
+        columns='alpha',
         values='Success_Rate',
-        sort=False # Preserves our categorical sort
+        sort=False  # Preserves our categorical sort
     )
 
     # Clean up Metric labels (sign_acc -> Sign, parity_acc -> Parity)
-    new_labels = [label.replace('_acc', '').capitalize() for label in unified_pivot.index.levels[1]]
+    new_labels = [label.replace('_acc', '').capitalize()
+                  for label in unified_pivot.index.levels[1]]
     unified_pivot.index = unified_pivot.index.set_levels(new_labels, level=1)
 
     # --- 3. Visualization ---
     plot_height = len(df['dataset'].unique()) * 1.8 + 1
     plt.figure(figsize=(14, plot_height))
-    
+
     sns.heatmap(
-        unified_pivot, 
-        annot=True, 
-        cmap="YlGnBu", 
-        fmt=".1f", 
-        vmin=0, 
+        unified_pivot,
+        annot=True,
+        cmap="YlGnBu",
+        fmt=".1f",
+        vmin=0,
         vmax=100,
         cbar_kws={'label': 'Success Rate %'},
         linewidths=.5
     )
-    
-    plt.title("Steering Performance: Hierarchical Dataset Breakdown", fontsize=14, pad=20)
+
+    plt.title("Steering Performance: Hierarchical Dataset Breakdown",
+              fontsize=14, pad=20)
     plt.xlabel("Alpha (Steering Strength)", fontsize=12)
     plt.ylabel("Dataset | Control Metric", fontsize=12)
-    
+
     # Save the consolidated heatmap
-    plt.savefig("images/unified_logic_heatmap.png", bbox_inches='tight', dpi=300)
+    plt.savefig("images/unified_logic_heatmap.png",
+                bbox_inches='tight', dpi=300)
     plt.close()
 
     # --- 3. UNIFIED PARETO FRONTIER ---
     plt.figure(figsize=(10, 6))
-    
+
     # Professional color palette for lines
-    colors = ["#8e44ad", "#e67e22", "#2980b9", "#27ae60"] # Purple, Orange, Blue, Green
-    
+    colors = ["#8e44ad", "#e67e22", "#2980b9",
+              "#27ae60"]  # Purple, Orange, Blue, Green
+
     for i, dataset in enumerate(dataset_order):
         ds_df = df[df['dataset'] == dataset].sort_values('alpha')
-        
+
         if not ds_df.empty:
             plt.plot(
-                ds_df['alpha'], 
-                ds_df['total_acc'], 
-                marker='o', 
-                linestyle='--', 
+                ds_df['alpha'],
+                ds_df['total_acc'],
+                marker='o',
+                linestyle='--',
                 linewidth=2,
-                color=colors[i], 
+                color=colors[i],
                 label=f'Compliance ({dataset})'
             )
 
-    plt.title("Unified Steering Pareto: Compliance vs. Alpha Intensity", fontsize=14, pad=15)
+    plt.title("Unified Steering Pareto: Compliance vs. Alpha Intensity",
+              fontsize=14, pad=15)
     plt.xlabel("Alpha (Steering Strength)", fontsize=12)
     plt.ylabel("Total Accuracy (%)", fontsize=12)
-    plt.ylim(0, 105) # Ensure visibility of 100% baseline
+    plt.ylim(0, 105)  # Ensure visibility of 100% baseline
     plt.grid(True, linestyle=':', alpha=0.6)
-    
+
     # Legend placement to avoid overlapping lines
     plt.legend(loc='lower right', frameon=True, shadow=True, fontsize=10)
-    
+
     plt.tight_layout()
     plt.savefig("images/unified_pareto_frontier.png", dpi=300)
     plt.close()
@@ -223,6 +229,11 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
     Generates a single, sorted heatmap of causal attribution across all categories
     to visualize feature overlaps and functional correlations.
     """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import numpy as np
+    import os
+
     if not os.path.exists(feature_log):
         print(f"Skipping Unified Lens: {feature_log} not found.")
         return
@@ -242,15 +253,14 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
         return
 
     # 2. Compute Global Causal Attribution (Logit Lens)
-    # Math: (Output Weight @ Hidden2 Weight) @ SAE Decoder Weight
-    # Layers per architecture: hidden2 (512->256), output (256->1)
+    # Math: Since SAE is at output of hidden2, we only project through the output layer.
+    # Dimensions: w_out (1, 256) @ w_dec (256, 2048) -> (1, 2048)
     with torch.no_grad():
-        w_out = mlp.layers['output'].weight  # (1, 256)
-        w_hid2 = mlp.layers['hidden2'].weight  # (256, 512)
-        w_dec = sae.decoder.weight  # (512, 2048)
+        w_out = mlp.layers['output'].weight    # Shape: (1, 256)
+        w_dec = sae.decoder.weight             # Shape: (256, 2048)
 
-        # Combined Projection: (1, 512) @ (512, 2048) -> (1, 2048)
-        w_causal = (w_out @ w_hid2) @ w_dec
+        # Simplified Projection for the new injection site
+        w_causal = w_out @ w_dec
 
         # Extract weights only for our unique features of interest
         global_impacts = w_causal[0, unique_ids].cpu().numpy()
@@ -270,21 +280,21 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
         row = []
         for fid in unique_ids:
             if fid in cat_ids:
-                # Find the index of this feature in our global_impacts array
+                # Get the impact of this specific feature
                 idx = unique_ids.index(fid)
                 row.append(global_impacts[idx])
             else:
-                # Leave blank to emphasize category-specific features
+                # Use NaN for features not belonging to this category to keep plot clean
                 row.append(np.nan)
 
         matrix_data.append(row)
         category_labels.append(label)
 
-    # 4. Plotting the Unified Heatmap
-    plt.figure(figsize=(max(len(unique_ids) * 0.6, 12),
-               len(category_labels) * 1.2))
+    # 4. Plotting
+    plt.figure(figsize=(max(len(unique_ids) * 0.8, 12),
+                        len(category_labels) * 1.5))
 
-    # Use a diverging colormap (RdBu_r) where Red=Positive impact, Blue=Negative impact
+    # RdBu_r: Red = Positive Output Push, Blue = Negative Output Push
     sns.heatmap(matrix_data,
                 annot=True,
                 fmt=".2f",
@@ -292,13 +302,14 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
                 center=0,
                 xticklabels=unique_ids,
                 yticklabels=category_labels,
-                cbar_kws={'label': 'Causal Push to Output'})
+                cbar_kws={'label': 'Causal Push to Logit'})
 
-    plt.title("Unified Logit-Lens: Causal Attribution & Feature Overlap",
+    plt.title("Unified Logit-Lens: Causal Attribution (Hidden2 Injection)",
               fontsize=15, pad=20)
-    plt.xlabel("SAE Feature ID (Sorted Index)", fontsize=12)
-    plt.ylabel("Discovered Logic Category", fontsize=12)
+    plt.xlabel("SAE Feature ID", fontsize=12)
+    plt.ylabel("Logic Category", fontsize=12)
 
+    os.makedirs("images", exist_ok=True)
     plt.savefig("images/unified_logit_lens.png", bbox_inches='tight')
     plt.close()
     print(

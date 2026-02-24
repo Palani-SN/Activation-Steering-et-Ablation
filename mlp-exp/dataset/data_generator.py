@@ -107,4 +107,4 @@ class MLPExcelGenerator:
 
 if __name__ == "__main__":
     generator = MLPExcelGenerator()
-    generator.save_all_splits()
+    generator.save_all_splits(train=8000, val=1000, test=1000)
