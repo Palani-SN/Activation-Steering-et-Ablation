@@ -48,7 +48,7 @@ def train_to_perfection():
                              for bx, by, _ in val_loader) / len(val_loader)
                 print(f"Epoch {epoch+1} | Val MSE: {v_loss:.6f}")
 
-    # --- RESEARCHER-TIER EVALUATION: PER-CONCEPT ACCURACY ---
+    # --- EVALUATION: PER-CONCEPT ACCURACY ---
     print("\n--- Final Performance Analysis ---")
     model.eval()
 

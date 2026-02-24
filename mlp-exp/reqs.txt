@@ -6,6 +6,7 @@ filelock==3.20.0
 fonttools==4.61.1
 fsspec==2025.12.0
 Jinja2==3.1.6
+joblib==1.5.3
 kiwisolver==1.4.9
 MarkupSafe==2.1.5
 matplotlib==3.10.8
@@ -21,12 +22,17 @@ pip==26.0.1
 plotly==6.5.2
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
+scikit-learn==1.8.0
+scipy==1.17.1
 setuptools==82.0.0
 six==1.17.0
 sympy==1.14.0
+tabulate==0.9.0
+threadpoolctl==3.6.0
 torch==2.10.0+cu126
 torchvision==0.25.0+cu126
 tqdm==4.67.3
 typing_extensions==4.15.0
 tzdata==2025.3
 wheel==0.46.3
+xlsxwriter==3.2.9
