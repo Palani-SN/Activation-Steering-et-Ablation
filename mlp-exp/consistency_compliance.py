@@ -38,50 +38,63 @@ class SteeringValidator:
 
     def calibrate(self, calibration_excel_path):
         """
-        Calculates the standard deviation of latent activations.
-        This fixes the AttributeError by populating self.latent_stds.
+        Calculates the standard deviation of latent activations and empirically calibrates parity steering to match sign steering effect.
         """
-        print(
-            f"  -> Calibrating feature scales using {calibration_excel_path}...")
-        df = pd.read_excel(calibration_excel_path).head(
-            1000)  # 1000 samples is enough
+        print(f"  -> Calibrating feature scales using {calibration_excel_path}...")
+        df = pd.read_excel(calibration_excel_path).head(1000)
 
         all_sign_acts = []
         all_parity_acts = []
 
         with torch.no_grad():
             for _, row in df.iterrows():
-                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(
-                    self.device).unsqueeze(0)
-
-                # Get activations from hidden1 (the SAE injection site)
+                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(self.device).unsqueeze(0)
                 _ = self.mlp(input_data)
                 raw_neurons = self.mlp.activations['hidden2']
-
-                # Encode to latent space
                 _, latents = self.sae(raw_neurons)
-
-                # Project latents onto our basis vectors to find 'magnitude' of the concept
-                # This tells us how strongly the 'Sign' or 'Parity' concepts usually activate
                 sign_mag = torch.dot(latents.flatten(), self.v_sign.flatten())
-                parity_mag = torch.dot(
-                    latents.flatten(), self.v_parity.flatten())
-
+                parity_mag = torch.dot(latents.flatten(), self.v_parity.flatten())
                 all_sign_acts.append(sign_mag.item())
                 all_parity_acts.append(parity_mag.item())
 
-        # Store the standard deviations
         self.latent_stds = {
             'sign': np.std(all_sign_acts) + 1e-8,
             'parity': np.std(all_parity_acts) + 1e-8
         }
 
         # Pre-calculate normalized vectors
-        self.norm_v_sign = self.v_sign / self.latent_stds['sign']
-        self.norm_v_parity = self.v_parity / self.latent_stds['parity']
+        norm_v_sign = self.v_sign / self.latent_stds['sign']
+        norm_v_parity = self.v_parity / self.latent_stds['parity']
 
-        print(
-            f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Parity_std={self.latent_stds['parity']:.4f}")
+        # --- Empirical calibration for output effect ---
+        sign_effects = []
+        parity_effects = []
+        with torch.no_grad():
+            for _, row in df.head(100).iterrows():
+                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(self.device).unsqueeze(0)
+                _ = self.mlp(input_data)
+                raw_neurons = self.mlp.activations['hidden2']
+                _, latents = self.sae(raw_neurons)
+                # Steer sign
+                steered_latents_sign = latents + norm_v_sign
+                steered_neurons_sign = self.sae.decoder(steered_latents_sign)
+                out_sign = self.mlp.layers['output'](self.mlp.relu(steered_neurons_sign)).item()
+                # Steer parity
+                steered_latents_parity = latents + norm_v_parity
+                steered_neurons_parity = self.sae.decoder(steered_latents_parity)
+                out_parity = self.mlp.layers['output'](self.mlp.relu(steered_neurons_parity)).item()
+                # Baseline output
+                out_base = self.mlp.layers['output'](self.mlp.relu(raw_neurons)).item()
+                sign_effects.append(abs(out_sign - out_base))
+                parity_effects.append(abs(out_parity - out_base))
+        mean_sign = sum(sign_effects) / (len(sign_effects) + 1e-8)
+        mean_parity = sum(parity_effects) / (len(parity_effects) + 1e-8)
+        parity_scale = mean_sign / (mean_parity + 1e-8) if mean_parity > 0 else 1.0
+        self.norm_v_sign = norm_v_sign
+        self.norm_v_parity = norm_v_parity * parity_scale
+
+        print(f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Parity_std={self.latent_stds['parity']:.4f}")
+        print(f"  [OK] Parity steering scaled by {parity_scale:.3f} to match sign effect.")
 
     def run_intervention(self, input_tensor, target_sign, target_parity, alpha=2.0):
         with torch.no_grad():

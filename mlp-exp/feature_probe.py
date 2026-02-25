@@ -183,21 +183,18 @@ def get_distinct_features_by_group(k=128):
 
 
 class UniversalSteeringController:
-    def __init__(self, mlp_path, sae_path, basis_path, latent_stats_path=None):
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
+
+    def __init__(self, mlp_path, sae_path, basis_path, latent_stats_path=None, calibration_excel_path="dataset/interp_test.xlsx"):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 1. Load MLP & Correct Architecture Mapping
         self.mlp = InterpretabilityMLP().to(self.device)
-        self.mlp.load_state_dict(torch.load(
-            mlp_path, map_location=self.device))
+        self.mlp.load_state_dict(torch.load(mlp_path, map_location=self.device))
         self.mlp.eval()
 
         # 2. Load SAE (Input 512 matches 'hidden1' output)
-        self.sae = SparseAutoencoder(
-            input_dim=256, dict_size=2048).to(self.device)
-        self.sae.load_state_dict(torch.load(
-            sae_path, map_location=self.device))
+        self.sae = SparseAutoencoder(input_dim=256, dict_size=2048).to(self.device)
+        self.sae.load_state_dict(torch.load(sae_path, map_location=self.device))
         self.sae.eval()
 
         # 3. Load Steering Basis
@@ -206,8 +203,6 @@ class UniversalSteeringController:
         v_parity = basis['v_parity']
 
         # 4. Feature Normalization Logic
-        # If you haven't saved stats, we use a small epsilon.
-        # Ideally, load the 'std' of these features calculated during Phase II.
         if latent_stats_path:
             stats = torch.load(latent_stats_path)
             std_sign = stats.get('sign_std', 1.0)
@@ -216,9 +211,48 @@ class UniversalSteeringController:
             std_sign = 1.0
             std_parity = 0.25
 
-        # CHANGE THESE NAMES:
-        self.norm_v_sign = v_sign / (std_sign + 1e-8)
-        self.norm_v_parity = v_parity / (std_parity + 1e-8)
+        # Initial normalization
+        norm_v_sign = v_sign / (std_sign + 1e-8)
+        norm_v_parity = v_parity / (std_parity + 1e-8)
+
+        # --- Empirical calibration for output effect ---
+        # Use a batch of calibration samples to match the output effect of sign and parity steering
+        try:
+            import pandas as pd
+            df = pd.read_excel(calibration_excel_path).head(100)
+            sign_effects = []
+            parity_effects = []
+            with torch.no_grad():
+                for _, row in df.iterrows():
+                    input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).unsqueeze(0).to(self.device)
+                    # Baseline
+                    _ = self.mlp(input_data)
+                    raw_neurons = self.mlp.activations['hidden2']
+                    _, latents = self.sae(raw_neurons)
+                    # Steer sign
+                    steered_latents_sign = latents + norm_v_sign
+                    steered_neurons_sign = self.sae.decoder(steered_latents_sign)
+                    out_sign = self.mlp.layers['output'](self.mlp.relu(steered_neurons_sign)).item()
+                    # Steer parity
+                    steered_latents_parity = latents + norm_v_parity
+                    steered_neurons_parity = self.sae.decoder(steered_latents_parity)
+                    out_parity = self.mlp.layers['output'](self.mlp.relu(steered_neurons_parity)).item()
+                    # Baseline output
+                    out_base = self.mlp.layers['output'](self.mlp.relu(raw_neurons)).item()
+                    sign_effects.append(abs(out_sign - out_base))
+                    parity_effects.append(abs(out_parity - out_base))
+            mean_sign = sum(sign_effects) / (len(sign_effects) + 1e-8)
+            mean_parity = sum(parity_effects) / (len(parity_effects) + 1e-8)
+            # Compute scaling factor for parity
+            parity_scale = mean_sign / (mean_parity + 1e-8) if mean_parity > 0 else 1.0
+            self.norm_v_sign = norm_v_sign
+            self.norm_v_parity = norm_v_parity * parity_scale
+            print(f"[Calibration] Parity steering scaled by {parity_scale:.3f} to match sign effect.")
+        except Exception as e:
+            # Fallback: no scaling
+            self.norm_v_sign = norm_v_sign
+            self.norm_v_parity = norm_v_parity
+            print(f"[Calibration] Parity scaling skipped due to error: {e}")
 
     def steer_input(self, input_tensor, target_sign=0, target_parity=0, alpha=2.0):
         with torch.no_grad():
