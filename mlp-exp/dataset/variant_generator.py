@@ -56,11 +56,11 @@ class OODDataGenerator(MLPExcelGenerator):
         is_neg = out_val < 0
 
         if self.dtype == float:
-            is_odd = abs(round(out_val)) % 2 != 0
-            is_even = abs(round(out_val)) % 2 == 0
+            is_odd = 0 <= abs(round(out_val)) < 5
+            is_even = 5 <= abs(round(out_val)) < 10
         else:
-            is_odd = abs(out_val) % 2 != 0
-            is_even = abs(out_val) % 2 == 0
+            is_odd = 0 <= abs(out_val) < 5
+            is_even = 5 <= abs(out_val) < 10
 
         group = None
         if is_pos and is_odd:

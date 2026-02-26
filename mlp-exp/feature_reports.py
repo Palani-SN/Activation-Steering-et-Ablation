@@ -47,12 +47,12 @@ def plot_elegant_dual_compass(file_path="steering_basis.pt"):
         return
 
     data = torch.load(file_path, map_location='cpu')
-    v_sign, v_parity = data["v_sign"], data["v_parity"]
+    v_sign, v_subset = data["v_sign"], data["v_parity"]  # v_parity now represents subset (0-5 vs 5-10)
 
     # 1. Coordinate Setup
-    vectors = torch.stack([v_sign, -v_sign, v_parity, -v_parity]).cpu().numpy()
+    vectors = torch.stack([v_sign, -v_sign, v_subset, -v_subset]).cpu().numpy()
     labels = ["Positive (+Sign)", "Negative (-Sign)",
-              "Odd (+Parity)", "Even (-Parity)"]
+              "Subset 0-5 (+Subset)", "Subset 5-10 (-Subset)"]
     colors = ["#2ecc71", "#e74c3c", "#3498db", "#f1c40f"]
 
     # PCA Projection
@@ -141,7 +141,7 @@ def plot_steering_performance_unified(pkl_path="alpha_sweep_results.pkl"):
     # --- 2. Unified Nested Heatmap ---
     melted_df = df.melt(
         id_vars=['dataset', 'alpha'],
-        value_vars=['sign_acc', 'parity_acc'],
+        value_vars=['sign_acc', 'subset_acc'],
         var_name='Metric',
         value_name='Success_Rate'
     )
@@ -154,9 +154,8 @@ def plot_steering_performance_unified(pkl_path="alpha_sweep_results.pkl"):
         sort=False  # Preserves our categorical sort
     )
 
-    # Clean up Metric labels (sign_acc -> Sign, parity_acc -> Parity)
-    new_labels = [label.replace('_acc', '').capitalize()
-                  for label in unified_pivot.index.levels[1]]
+    # Clean up Metric labels (sign_acc -> Sign, subset_acc -> Subset)
+    new_labels = ["Sign" if label == "sign_acc" else "Subset" for label in unified_pivot.index.levels[1]]
     unified_pivot.index = unified_pivot.index.set_levels(new_labels, level=1)
 
     # --- 3. Visualization ---
@@ -270,25 +269,23 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
     matrix_data = []
     category_labels = []
 
+    # Clean up category labels for new style
     for label, ids in subsets.items():
-        # Clean the current category IDs
+        clean_label = label.replace('Odd Parity', 'Subset 0-5').replace('Even Parity', 'Subset 5-10').replace('Positive Sign', 'Positive').replace('Negative Sign', 'Negative')
         cat_ids = [int(i) for i in (ids if isinstance(
             ids, (list, np.ndarray)) else list(ids))]
 
         # Create a row where we only show the impact if the feature is in this category
-        # This highlights overlaps between categories across the same column
         row = []
         for fid in unique_ids:
             if fid in cat_ids:
-                # Get the impact of this specific feature
                 idx = unique_ids.index(fid)
                 row.append(global_impacts[idx])
             else:
-                # Use NaN for features not belonging to this category to keep plot clean
                 row.append(np.nan)
 
         matrix_data.append(row)
-        category_labels.append(label)
+        category_labels.append(clean_label)
 
     # 4. Plotting
     plt.figure(figsize=(max(len(unique_ids) * 0.8, 12),

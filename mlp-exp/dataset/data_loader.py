@@ -5,10 +5,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 # --- 1. Map Concepts to Integers for PyTorch ---
 CONCEPT_MAP = {
-    "pos_odd": 0,
-    "pos_even": 1,
-    "neg_odd": 2,
-    "neg_even": 3
+    "+00 < pos <= +05": 0,
+    "+05 < pos <= +10": 1,
+    "-05 <= neg < +00": 2,
+    "-10 <= neg < -05": 3
 }
 
 def load_excel_to_dataloader(filename, batch_size=32, include_concepts=True):

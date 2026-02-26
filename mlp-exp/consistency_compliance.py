@@ -28,7 +28,7 @@ class SteeringValidator:
         # 3. Load Steering Basis
         basis = torch.load(basis_path, map_location=self.device)
         self.v_sign = basis['v_sign']
-        self.v_parity = basis['v_parity']
+        self.v_subset = basis['v_parity']  # v_parity now represents subset (0-5 vs 5-10)
 
         # 4. FIX: Initialize latent_stds to None
         # This will be populated by the calibrate() method
@@ -44,7 +44,7 @@ class SteeringValidator:
         df = pd.read_excel(calibration_excel_path).head(1000)
 
         all_sign_acts = []
-        all_parity_acts = []
+        all_subset_acts = []
 
         with torch.no_grad():
             for _, row in df.iterrows():
@@ -53,22 +53,22 @@ class SteeringValidator:
                 raw_neurons = self.mlp.activations['hidden2']
                 _, latents = self.sae(raw_neurons)
                 sign_mag = torch.dot(latents.flatten(), self.v_sign.flatten())
-                parity_mag = torch.dot(latents.flatten(), self.v_parity.flatten())
+                subset_mag = torch.dot(latents.flatten(), self.v_subset.flatten())
                 all_sign_acts.append(sign_mag.item())
-                all_parity_acts.append(parity_mag.item())
+                all_subset_acts.append(subset_mag.item())
 
         self.latent_stds = {
             'sign': np.std(all_sign_acts) + 1e-8,
-            'parity': np.std(all_parity_acts) + 1e-8
+            'subset': np.std(all_subset_acts) + 1e-8
         }
 
         # Pre-calculate normalized vectors
         norm_v_sign = self.v_sign / self.latent_stds['sign']
-        norm_v_parity = self.v_parity / self.latent_stds['parity']
+        norm_v_subset = self.v_subset / self.latent_stds['subset']
 
         # --- Empirical calibration for output effect ---
         sign_effects = []
-        parity_effects = []
+        subset_effects = []
         with torch.no_grad():
             for _, row in df.head(100).iterrows():
                 input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(self.device).unsqueeze(0)
@@ -79,24 +79,24 @@ class SteeringValidator:
                 steered_latents_sign = latents + norm_v_sign
                 steered_neurons_sign = self.sae.decoder(steered_latents_sign)
                 out_sign = self.mlp.layers['output'](self.mlp.relu(steered_neurons_sign)).item()
-                # Steer parity
-                steered_latents_parity = latents + norm_v_parity
-                steered_neurons_parity = self.sae.decoder(steered_latents_parity)
-                out_parity = self.mlp.layers['output'](self.mlp.relu(steered_neurons_parity)).item()
+                # Steer subset
+                steered_latents_subset = latents + norm_v_subset
+                steered_neurons_subset = self.sae.decoder(steered_latents_subset)
+                out_subset = self.mlp.layers['output'](self.mlp.relu(steered_neurons_subset)).item()
                 # Baseline output
                 out_base = self.mlp.layers['output'](self.mlp.relu(raw_neurons)).item()
                 sign_effects.append(abs(out_sign - out_base))
-                parity_effects.append(abs(out_parity - out_base))
+                subset_effects.append(abs(out_subset - out_base))
         mean_sign = sum(sign_effects) / (len(sign_effects) + 1e-8)
-        mean_parity = sum(parity_effects) / (len(parity_effects) + 1e-8)
-        parity_scale = mean_sign / (mean_parity + 1e-8) if mean_parity > 0 else 1.0
+        mean_subset = sum(subset_effects) / (len(subset_effects) + 1e-8)
+        subset_scale = mean_sign / (mean_subset + 1e-8) if mean_subset > 0 else 1.0
         self.norm_v_sign = norm_v_sign
-        self.norm_v_parity = norm_v_parity * parity_scale
+        self.norm_v_subset = norm_v_subset * subset_scale
 
-        print(f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Parity_std={self.latent_stds['parity']:.4f}")
-        print(f"  [OK] Parity steering scaled by {parity_scale:.3f} to match sign effect.")
+        print(f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Subset_std={self.latent_stds['subset']:.4f}")
+        print(f"  [OK] Subset steering scaled by {subset_scale:.3f} to match sign effect.")
 
-    def run_intervention(self, input_tensor, target_sign, target_parity, alpha=2.0):
+    def run_intervention(self, input_tensor, target_sign, target_subset, alpha=2.0):
         with torch.no_grad():
             # 1. Get RAW linear activations
             _ = self.mlp(input_tensor.to(self.device))
@@ -106,7 +106,7 @@ class SteeringValidator:
             _, latent_features = self.sae(raw_neurons)
             steered_latents = latent_features + \
                 (target_sign * alpha * self.norm_v_sign) + \
-                (target_parity * alpha * self.norm_v_parity)
+                (target_subset * alpha * self.norm_v_subset)
             steered_neurons = self.sae.decoder(steered_latents)
 
             # 3. Complete the MLP pass EXACTLY as the model does
@@ -119,12 +119,11 @@ class SteeringValidator:
         """Validates steering success rate over 1000 samples."""
         df = pd.read_excel(excel_path)
         total_samples = len(df)
-        success_counts = {"sign": 0, "parity": 0, "both": 0}
+        success_counts = {"sign": 0, "subset": 0, "both": 0}
 
         if not silent:
             dataset_name = excel_path.split('/')[-1].replace('.xlsx', '')
-            print(
-                f"  → Validating {total_samples} samples from {dataset_name}...")
+            print(f"  → Validating {total_samples} samples from {dataset_name}...")
 
         for idx, row in df.iterrows():
             # Prepare input
@@ -132,62 +131,60 @@ class SteeringValidator:
                 eval(row['input_list']), dtype=torch.float32).unsqueeze(0)
 
             # 1. Test Sign Flip
-            # LOGIC FIX: We steer to the OPPOSITE of the original state.
             # If positive, target is negative (-1). If negative, target is positive (1).
-            orig_is_pos = row['concept'].startswith('pos')
+            orig_is_pos = ('pos' in row['concept']) or ('+' in row['concept'])
             target_s = -1 if orig_is_pos else 1
 
             res_s = self.run_intervention(
-                input_data, target_sign=target_s, target_parity=0, alpha=alpha)
+                input_data, target_sign=target_s, target_subset=0, alpha=alpha)
 
             # SUCCESS: Did the model reach the target state we commanded?
             if (target_s == 1 and res_s > 0) or (target_s == -1 and res_s < 0):
                 success_counts["sign"] += 1
 
-            # 2. Test Parity Flip
-            # LOGIC FIX: If odd, target is even (-1). If even, target is odd (1).
-            orig_is_odd = row['concept'].endswith('odd')
-            target_p = -1 if orig_is_odd else 1
+            # 2. Test Subset Flip (0-5 <-> 5-10)
+            # If in 0-5, target is 5-10 (-1). If in 5-10, target is 0-5 (1).
+            abs_val = abs(row['output']) if 'output' in row else abs(row['label']) if 'label' in row else abs(eval(row['input_list'])[0])
+            orig_in_0_5 = (0 < abs_val <= 5)
+            target_subset = -1 if orig_in_0_5 else 1
 
-            res_p = self.run_intervention(
-                input_data, target_sign=0, target_parity=target_p, alpha=alpha)
+            res_subset = self.run_intervention(
+                input_data, target_sign=0, target_subset=target_subset, alpha=alpha)
 
-            # SUCCESS: Check if final parity matches our target command
-            res_p_is_odd = (round(res_p) % 2 != 0)
-            if (target_p == 1 and res_p_is_odd) or (target_p == -1 and not res_p_is_odd):
-                success_counts["parity"] += 1
+            # SUCCESS: Check if final subset matches our target command
+            res_subset_in_0_5 = (0 < abs(res_subset) <= 5)
+            if (target_subset == 1 and res_subset_in_0_5) or (target_subset == -1 and not res_subset_in_0_5):
+                success_counts["subset"] += 1
 
             # 3. Test Full Quadrant Flip (Both)
             res_both = self.run_intervention(
-                input_data, target_sign=target_s, target_parity=target_p, alpha=alpha)
+                input_data, target_sign=target_s, target_subset=target_subset, alpha=alpha)
 
             sign_ok = (target_s == 1 and res_both > 0) or (
                 target_s == -1 and res_both < 0)
-            parity_ok = (target_p == 1 and round(res_both) % 2 != 0) or (
-                target_p == -1 and round(res_both) % 2 == 0)
+            subset_ok = (target_subset == 1 and 0 < abs(res_both) <= 5) or (
+                target_subset == -1 and 5 < abs(res_both) <= 10)
 
-            if sign_ok and parity_ok:
+            if sign_ok and subset_ok:
                 success_counts["both"] += 1
 
         # 1. Calculate final percentages using total_samples (1000)
-        # This is correct because we attempted to steer every single row to a new target.
         sign_percent = (success_counts['sign'] / total_samples) * 100
-        parity_percent = (success_counts['parity'] / total_samples) * 100
+        subset_percent = (success_counts['subset'] / total_samples) * 100
         both_percent = (success_counts['both'] / total_samples) * 100
 
         if not silent:
-            # All original print statements preserved
             print("\n" + "="*70)
             print("  STEERING SUCCESS RATES (Alpha = {:.2f})".format(alpha))
             print("="*70)
             print(f"  [OK] Sign Flip Success   : {sign_percent:6.2f}%")
-            print(f"  [OK] Parity Flip Success : {parity_percent:6.2f}%")
+            print(f"  [OK] Subset Flip Success : {subset_percent:6.2f}%")
             print(f"  [OK] Full Quadrant Flip  : {both_percent:6.2f}%")
             print("="*70 + "\n")
 
         return {
             "sign_percent": sign_percent,
-            "parity_percent": parity_percent,
+            "subset_percent": subset_percent,
             "both_percent": both_percent
         }
 
@@ -209,7 +206,7 @@ class SteeringValidator:
                     "alpha": alpha,
                     "dataset": name,
                     "sign_acc": stats["sign_percent"],
-                    "parity_acc": stats["parity_percent"],
+                    "subset_acc": stats["subset_percent"],
                     "total_acc": stats["both_percent"]
                 })
 
@@ -219,7 +216,7 @@ class SteeringValidator:
         # 1. Prepare the metrics we want to visualize
         metrics = {
             "Sign_Accuracy": "sign_acc",
-            "Parity_Accuracy": "parity_acc",
+            "Subset_Accuracy": "subset_acc",
             "Total_Accuracy": "total_acc"
         }
 

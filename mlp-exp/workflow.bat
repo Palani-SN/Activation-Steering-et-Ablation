@@ -20,9 +20,7 @@ echo.
 echo [2/8] ^> Generating Dataset...
 cd dataset
 python data_generator.py || (echo [FAIL] Data generation failed & exit /b 1)
-echo [OK] Primary dataset generated
-python variant_generator.py || (echo [FAIL] Variant generation failed & exit /b 1)
-echo [OK] OOD variants generated
+echo [OK] All datasets generated
 cd ..
 echo.
 
