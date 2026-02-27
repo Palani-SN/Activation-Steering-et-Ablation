@@ -4,8 +4,11 @@ import torch.nn as nn
 
 
 class InterpretabilityMLP(nn.Module):
+
     def __init__(self):
+
         super().__init__()
+
         # Using a wider architecture to allow "lookup table" behavior
         self.layers = nn.ModuleDict({
             'input': nn.Linear(10, 256),
@@ -15,10 +18,12 @@ class InterpretabilityMLP(nn.Module):
             'hidden2': nn.Linear(512, 256),
             'output': nn.Linear(256, 1)
         })
+        
         self.relu = nn.ReLU()
         self.activations = {}
 
     def forward(self, x):
+
         # Layer 1
         x = self.relu(self.layers['bn1'](self.layers['input'](x)))
 
@@ -29,7 +34,7 @@ class InterpretabilityMLP(nn.Module):
         x = self.relu(self.layers['bn2'](x))
         x = self.layers['hidden2'](x)
 
-        self.activations['hidden2'] = x  # Use 'hidden1' to avoid confusion
+        self.activations['hidden2'] = x  # Use 'hidden2' to avoid confusion
         x = self.relu(x)
 
         x = self.layers['output'](x)

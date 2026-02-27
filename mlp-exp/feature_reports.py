@@ -47,7 +47,8 @@ def plot_elegant_dual_compass(file_path="steering_basis.pt"):
         return
 
     data = torch.load(file_path, map_location='cpu')
-    v_sign, v_subset = data["v_sign"], data["v_parity"]  # v_parity now represents subset (0-5 vs 5-10)
+    # v_parity now represents subset (0-5 vs 5-10)
+    v_sign, v_subset = data["v_sign"], data["v_parity"]
 
     # 1. Coordinate Setup
     vectors = torch.stack([v_sign, -v_sign, v_subset, -v_subset]).cpu().numpy()
@@ -105,7 +106,7 @@ def plot_elegant_dual_compass(file_path="steering_basis.pt"):
         ax.set_aspect('equal')
         ax.grid(True, linestyle=':', alpha=0.2)
 
-    plt.suptitle("Phase III: Logic Basis Geometric Disentanglement",
+    plt.suptitle(" Logic Basis Geometric Disentanglement",
                  fontsize=15, y=0.98)
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig("images/concept_compass_elegant.png",
@@ -155,7 +156,8 @@ def plot_steering_performance_unified(pkl_path="alpha_sweep_results.pkl"):
     )
 
     # Clean up Metric labels (sign_acc -> Sign, subset_acc -> Subset)
-    new_labels = ["Sign" if label == "sign_acc" else "Subset" for label in unified_pivot.index.levels[1]]
+    new_labels = ["Sign" if label ==
+                  "sign_acc" else "Subset" for label in unified_pivot.index.levels[1]]
     unified_pivot.index = unified_pivot.index.set_levels(new_labels, level=1)
 
     # --- 3. Visualization ---
@@ -271,7 +273,8 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
 
     # Clean up category labels for new style
     for label, ids in subsets.items():
-        clean_label = label.replace('Odd Parity', 'Subset 0-5').replace('Even Parity', 'Subset 5-10').replace('Positive Sign', 'Positive').replace('Negative Sign', 'Negative')
+        clean_label = label.replace('Odd Parity', 'Subset 0-5').replace('Even Parity', 'Subset 5-10').replace(
+            'Positive Sign', 'Positive').replace('Negative Sign', 'Negative')
         cat_ids = [int(i) for i in (ids if isinstance(
             ids, (list, np.ndarray)) else list(ids))]
 
@@ -307,7 +310,7 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
     plt.ylabel("Logic Category", fontsize=12)
 
     os.makedirs("images", exist_ok=True)
-    plt.savefig("images/unified_logit_lens.png", bbox_inches='tight')
+    plt.savefig("images/unified_logit_lens.png", bbox_inches='tight', dpi=300)
     plt.close()
     print(
         f"     Success: Unified Logit-Lens generated for {len(unique_ids)} features.")
@@ -316,7 +319,7 @@ def plot_unified_logit_lens(mlp, sae, feature_log="feature_subsets.pt"):
 # --- EXECUTION ---
 if __name__ == '__main__':
     print("\n" + "="*70)
-    print("  PHASE III: GENERATING VISUALIZATION SUITE")
+    print(" GENERATING VISUALIZATION SUITE")
     print("="*70 + "\n")
 
     # Create images directory

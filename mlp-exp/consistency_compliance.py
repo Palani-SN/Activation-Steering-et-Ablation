@@ -7,6 +7,7 @@ from sae.sae_definition import SparseAutoencoder
 
 
 class SteeringValidator:
+
     def __init__(self, mlp_path, sae_path, basis_path):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
@@ -28,7 +29,8 @@ class SteeringValidator:
         # 3. Load Steering Basis
         basis = torch.load(basis_path, map_location=self.device)
         self.v_sign = basis['v_sign']
-        self.v_subset = basis['v_parity']  # v_parity now represents subset (0-5 vs 5-10)
+        # v_parity now represents subset (0-5 vs 5-10)
+        self.v_subset = basis['v_parity']
 
         # 4. FIX: Initialize latent_stds to None
         # This will be populated by the calibrate() method
@@ -40,7 +42,8 @@ class SteeringValidator:
         """
         Calculates the standard deviation of latent activations and empirically calibrates parity steering to match sign steering effect.
         """
-        print(f"  -> Calibrating feature scales using {calibration_excel_path}...")
+        print(
+            f"  -> Calibrating feature scales using {calibration_excel_path}...")
         df = pd.read_excel(calibration_excel_path).head(1000)
 
         all_sign_acts = []
@@ -48,12 +51,14 @@ class SteeringValidator:
 
         with torch.no_grad():
             for _, row in df.iterrows():
-                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(self.device).unsqueeze(0)
+                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(
+                    self.device).unsqueeze(0)
                 _ = self.mlp(input_data)
                 raw_neurons = self.mlp.activations['hidden2']
                 _, latents = self.sae(raw_neurons)
                 sign_mag = torch.dot(latents.flatten(), self.v_sign.flatten())
-                subset_mag = torch.dot(latents.flatten(), self.v_subset.flatten())
+                subset_mag = torch.dot(
+                    latents.flatten(), self.v_subset.flatten())
                 all_sign_acts.append(sign_mag.item())
                 all_subset_acts.append(subset_mag.item())
 
@@ -71,30 +76,38 @@ class SteeringValidator:
         subset_effects = []
         with torch.no_grad():
             for _, row in df.head(100).iterrows():
-                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(self.device).unsqueeze(0)
+                input_data = torch.tensor(eval(row['input_list']), dtype=torch.float32).to(
+                    self.device).unsqueeze(0)
                 _ = self.mlp(input_data)
                 raw_neurons = self.mlp.activations['hidden2']
                 _, latents = self.sae(raw_neurons)
                 # Steer sign
                 steered_latents_sign = latents + norm_v_sign
                 steered_neurons_sign = self.sae.decoder(steered_latents_sign)
-                out_sign = self.mlp.layers['output'](self.mlp.relu(steered_neurons_sign)).item()
+                out_sign = self.mlp.layers['output'](
+                    self.mlp.relu(steered_neurons_sign)).item()
                 # Steer subset
                 steered_latents_subset = latents + norm_v_subset
-                steered_neurons_subset = self.sae.decoder(steered_latents_subset)
-                out_subset = self.mlp.layers['output'](self.mlp.relu(steered_neurons_subset)).item()
+                steered_neurons_subset = self.sae.decoder(
+                    steered_latents_subset)
+                out_subset = self.mlp.layers['output'](
+                    self.mlp.relu(steered_neurons_subset)).item()
                 # Baseline output
-                out_base = self.mlp.layers['output'](self.mlp.relu(raw_neurons)).item()
+                out_base = self.mlp.layers['output'](
+                    self.mlp.relu(raw_neurons)).item()
                 sign_effects.append(abs(out_sign - out_base))
                 subset_effects.append(abs(out_subset - out_base))
         mean_sign = sum(sign_effects) / (len(sign_effects) + 1e-8)
         mean_subset = sum(subset_effects) / (len(subset_effects) + 1e-8)
-        subset_scale = mean_sign / (mean_subset + 1e-8) if mean_subset > 0 else 1.0
+        subset_scale = mean_sign / \
+            (mean_subset + 1e-8) if mean_subset > 0 else 1.0
         self.norm_v_sign = norm_v_sign
         self.norm_v_subset = norm_v_subset * subset_scale
 
-        print(f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Subset_std={self.latent_stds['subset']:.4f}")
-        print(f"  [OK] Subset steering scaled by {subset_scale:.3f} to match sign effect.")
+        print(
+            f"  [OK] Calibration: Sign_std={self.latent_stds['sign']:.4f}, Subset_std={self.latent_stds['subset']:.4f}")
+        print(
+            f"  [OK] Subset steering scaled by {subset_scale:.3f} to match sign effect.")
 
     def run_intervention(self, input_tensor, target_sign, target_subset, alpha=2.0):
         with torch.no_grad():
@@ -123,7 +136,8 @@ class SteeringValidator:
 
         if not silent:
             dataset_name = excel_path.split('/')[-1].replace('.xlsx', '')
-            print(f"  → Validating {total_samples} samples from {dataset_name}...")
+            print(
+                f"  → Validating {total_samples} samples from {dataset_name}...")
 
         for idx, row in df.iterrows():
             # Prepare input
@@ -144,7 +158,8 @@ class SteeringValidator:
 
             # 2. Test Subset Flip (0-5 <-> 5-10)
             # If in 0-5, target is 5-10 (-1). If in 5-10, target is 0-5 (1).
-            abs_val = abs(row['output']) if 'output' in row else abs(row['label']) if 'label' in row else abs(eval(row['input_list'])[0])
+            abs_val = abs(row['output']) if 'output' in row else abs(
+                row['label']) if 'label' in row else abs(eval(row['input_list'])[0])
             orig_in_0_5 = (0 < abs_val <= 5)
             target_subset = -1 if orig_in_0_5 else 1
 
@@ -271,7 +286,7 @@ class SteeringValidator:
 if __name__ == "__main__":
 
     print("\n" + "="*70)
-    print("  PHASE III: STEERING VALIDATION & COMPLIANCE TESTING")
+    print(" STEERING VALIDATION & COMPLIANCE TESTING")
     print("="*70 + "\n")
 
     validator = SteeringValidator(
@@ -281,7 +296,7 @@ if __name__ == "__main__":
     validator.calibrate("dataset/interp_test.xlsx")
 
     # Validate standard Integer Test Set
-    print("  1. Testing Interpolation (In-Distribution)...")
+    print("\n  1. Testing Interpolation (In-Distribution)...")
     validator.validate_dataset("dataset/interp_test.xlsx")
 
     # Validate OOD Extrapolation Set (10-20)
@@ -303,10 +318,11 @@ if __name__ == "__main__":
             "Scaling": "dataset/scaling_test.xlsx",
             "Precision": "dataset/precision_test.xlsx"
         }),
-        alpha_range=[0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 20.0, 32.0, 64.0, 100.0, 128.0, 256.0, 512.0, 1024.0],
+        alpha_range=[0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 20.0,
+                     32.0, 64.0, 100.0, 128.0, 256.0, 512.0, 1024.0],
         filename="alpha_sweep_results.xlsx"
     )
 
     print("\n" + "="*70)
-    print("  ✓ PHASE III COMPLETE - ALL VALIDATIONS PASSED")
+    print("  ✓  COMPLETE - ALL VALIDATIONS PASSED")
     print("="*70 + "\n")

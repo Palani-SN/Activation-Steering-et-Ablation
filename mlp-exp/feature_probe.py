@@ -80,9 +80,9 @@ def get_top_k_features_by_group(mlp_path, sae_path, excel_path, k=5):
     group_features = defaultdict(lambda: defaultdict(float))
     group_counts = defaultdict(int)
 
-    print("\n" + "="*70)
+    print("\n" + "="*85)
     print("  ANALYZING FEATURE ACTIVATIONS ACROSS GROUPS")
-    print("="*70)
+    print("="*85)
     print("  -> Processing test samples and extracting SAE features...\n")
     with torch.no_grad():
         for _, row in df.iterrows():
@@ -125,9 +125,9 @@ def get_distinct_features_by_group(k=128):
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "dataset/mlp_test.xlsx", k=k
     )
 
-    print("\n" + "="*70)
+    print("\n" + "="*85)
     print(f"  TOP-{k} FEATURES PER CONCEPT GROUP")
-    print("="*70)
+    print("="*85)
     for group, feats in feats_by_grp.items():
         print(f"  {group:28} : {feats}")
 
@@ -152,9 +152,9 @@ def get_distinct_features_by_group(k=128):
     common_feats = pos_feats & neg_feats & subset1_feats & subset2_feats
     print(f"\n  [OK] Universal Common Features: {sorted(list(common_feats))}")
 
-    print("\n" + "="*70)
+    print("\n" + "="*85)
     print("  IDENTIFIED FEATURE SUBSETS (UNIONS)")
-    print("="*70)
+    print("="*85)
     print(f"  Positive Sign Features : {sorted(list(pos_feats))}")
     print(f"  Subset 0-5 Features    : {sorted(list(subset1_feats))}")
     print(f"  Negative Sign Features : {sorted(list(neg_feats))}")
@@ -200,7 +200,7 @@ def get_distinct_features_by_group(k=128):
     # 2. Save the dictionary for Phase III
     torch.save(feature_subsets, "feature_subsets.pt")
     print(f"\n  [OK] Successfully saved {len(feature_subsets)} feature groups")
-    print("="*70 + "\n")
+    print("="*85 + "\n")
 
     return {
         "pos_sign": sorted(list(pos_only_feats)),
@@ -431,9 +431,9 @@ def print_steering_dashboard(expected, predicted, interventions):
 if __name__ == "__main__":
 
     # --- PCA Baseline Extraction ---
-    print("\n" + "="*70)
+    print("\n" + "="*85)
     print("  PCA BASELINE VECTOR EXTRACTION")
-    print("="*70)
+    print("="*85)
     pca_vectors = get_pca_vectors(
         "harvested_data.pt", "sae/universal_sae.pth", n_components=2)
     print(f"  Extracted {len(pca_vectors)} PCA directions from SAE latents.")
@@ -443,25 +443,32 @@ if __name__ == "__main__":
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", pca_vectors)
 
     # --- Compliance Evaluation: SAE vs PCA ---
-    print("\n" + "="*70)
+    print("\n" + "="*85)
     print("  COMPLIANCE EVALUATION: SAE vs PCA Steering")
-    print("="*70)
+    print("="*85)
+
     import pandas as pd
     df = pd.read_excel("dataset/interp_test.xlsx").head(100)
+
     sae_controller = UniversalSteeringController(
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "steering_basis.pt")
+
     alpha_values = [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]
     print("\nAlpha Sweep Compliance (SAE vs PCA):")
     for alpha in alpha_values:
+
         sae_sign_success = 0
         pca_sign_success = 0
         sae_subset_success = 0
         pca_subset_success = 0
         total = 0
+
         for _, row in df.iterrows():
+
             input_data = torch.tensor(
                 eval(row['input_list']), dtype=torch.float32).unsqueeze(0)
             concept = row['concept']
+
             # Determine sign from concept string
             orig_is_pos = ('+' in concept)
             target_s = -1 if orig_is_pos else 1
@@ -500,17 +507,19 @@ if __name__ == "__main__":
 
     # 4. Metric: Orthogonality Check
     cosine_sim = torch.nn.functional.cosine_similarity(
-        v_sign.unsqueeze(0), v_parity.unsqueeze(0))
+        v_sign.unsqueeze(0), v_parity.unsqueeze(0)
+    )
 
-    print("\n" + "="*70)
+    print("\n" + "="*85)
     print("  STEERING BASIS VECTORS ANALYSIS")
-    print("="*70)
+    print("="*85)
     print(f"  Sign-Parity Cosine Similarity: {cosine_sim.item():.4f}")
     print("  Interpretation: Near 0.0 → concepts are perfectly disentangled ✓")
-    print("="*70 + "\n")
+    print("="*85 + "\n")
 
     torch.save({"v_sign": v_sign, "v_parity": v_parity}, "steering_basis.pt")
 
+    # --- Surgical Ablation ---
     dist_feat = get_distinct_features_by_group(k=128)
 
     test_inputs = [
@@ -535,31 +544,40 @@ if __name__ == "__main__":
         val = inp[-1]
 
         if val < 0:
+
             # 1. Test Sign: Kill Negative Features
             run_surgical_ablation(
                 inp[0], dist_feat["neg_sign"], "Kill Neg Sign")
 
             # 2. Test Subset: Check if it's in the 'Small' or 'Large' negative range
             if -5 <= val < 0:
+
                 run_surgical_ablation(
                     inp[0], dist_feat["subset_0_5"], "Kill (-5, 0) Subset")
+
             else:  # val is between -10 and -5
+
                 run_surgical_ablation(
                     inp[0], dist_feat["subset_5_10"], "Kill (-10, -5) Subset")
 
         else:  # val >= 0
+
             # 1. Test Sign: Kill Positive Features
             run_surgical_ablation(
                 inp[0], dist_feat["pos_sign"], "Kill Pos Sign")
 
             # 2. Test Subset: Check if it's in the 'Small' or 'Large' positive range
             if 0 <= val <= 5:
+
                 run_surgical_ablation(
                     inp[0], dist_feat["subset_0_5"], "Kill (0, 5) Subset")
+
             else:  # val is between 5 and 10
+
                 run_surgical_ablation(
                     inp[0], dist_feat["subset_5_10"], "Kill (5, 10) Subset")
 
+    # --- Latent Steering ---
     controller = UniversalSteeringController(
         "mlp/perfect_mlp.pth", "sae/universal_sae.pth", "steering_basis.pt")
 
@@ -573,6 +591,7 @@ if __name__ == "__main__":
         input_tensor = torch.tensor([inp[0]], dtype=torch.float32)
 
         interventions = {
+
             "Flipped: POS + SML": controller.steer_input(input_tensor, target_sign=1, target_parity=1),
             "Steer to Positive": controller.steer_input(input_tensor, target_sign=1, target_parity=0),
             "Flipped: POS + LRG": controller.steer_input(input_tensor, target_sign=1, target_parity=-1),
@@ -584,7 +603,7 @@ if __name__ == "__main__":
             "Flipped: NEG + SML": controller.steer_input(input_tensor, target_sign=-1, target_parity=1),
 
             "Steer to Subset 0-5": controller.steer_input(input_tensor, target_sign=0, target_parity=1),
-            
+
         }
 
         print_steering_dashboard(
@@ -595,25 +614,4 @@ if __name__ == "__main__":
             interventions
         )
 
-        # print(
-        #     f"Predicted Output: {controller.steer_input(input_tensor, 0, 0)}")
-        # print(
-        #     f"    Steer to Positive: {controller.steer_input(input_tensor, target_sign=-1, target_parity=0)}")
-        # print(
-        #     f"    Steer to Negative: {controller.steer_input(input_tensor, target_sign=-1, target_parity=0)}")
-
-        # print(
-        #     f"    Steer to Subset 0-5: {controller.steer_input(input_tensor, target_sign=0, target_parity=1)}")
-        # print(
-        #     f"    Steer to Subset 5-10: {controller.steer_input(input_tensor, target_sign=0, target_parity=-1)}")
-
-        # print(
-        #     f"        Steer to Positive, Subset 0-5: {controller.steer_input(input_tensor, target_sign=1, target_parity=1)}")
-        # print(
-        #     f"        Steer to Positive, Subset 5-10: {controller.steer_input(input_tensor, target_sign=1, target_parity=-1)}")
-
-        # print(
-        #     f"        Steer to Negative, Subset 0-5: {controller.steer_input(input_tensor, target_sign=-1, target_parity=1)}")
-        # print(
-        #     f"        Steer to Negative, Subset 5-10: {controller.steer_input(input_tensor, target_sign=-1, target_parity=-1)}")
-        print("-" * 50)
+        print("-" * 85)

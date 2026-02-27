@@ -3,13 +3,18 @@ import torch.nn as nn
 
 
 class SparseAutoencoder(nn.Module):
+
     def __init__(self, input_dim=256, dict_size=2048, k=128):
+
         super().__init__()
+
         self.encoder = nn.Linear(input_dim, dict_size)
         self.decoder = nn.Linear(dict_size, input_dim)
+
         self.k = k  # Number of features to keep active
 
     def forward(self, x):
+
         # 1. Linear Projection
         pre_act = self.encoder(x)
 
