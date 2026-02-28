@@ -22,7 +22,7 @@ def load_excel_to_dataloader(filename, batch_size=32, include_concepts=True):
                      for y in df['output_list']], dtype=torch.float32)
 
     if include_concepts and 'concept' in df.columns:
-        # Convert string labels ('pos_odd') to integers for the DataLoader
+        # Convert string labels ('+00 < pos <= +05') to integers for the DataLoader
         groups = torch.tensor([CONCEPT_MAP[g]
                               for g in df['concept']], dtype=torch.long)
         dataset = TensorDataset(X, y, groups)

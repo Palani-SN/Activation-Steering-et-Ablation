@@ -273,8 +273,6 @@ def plot_unified_logit_lens(mlp, sae, feature_log="temp/feature_subsets.pt"):
 
     # Clean up category labels for new style
     for label, ids in subsets.items():
-        clean_label = label.replace('Odd Parity', 'Subset 0-5').replace('Even Parity', 'Subset 5-10').replace(
-            'Positive Sign', 'Positive').replace('Negative Sign', 'Negative')
         cat_ids = [int(i) for i in (ids if isinstance(
             ids, (list, np.ndarray)) else list(ids))]
 
@@ -288,7 +286,7 @@ def plot_unified_logit_lens(mlp, sae, feature_log="temp/feature_subsets.pt"):
                 row.append(np.nan)
 
         matrix_data.append(row)
-        category_labels.append(clean_label)
+        category_labels.append(label)
 
     # 4. Plotting
     plt.figure(figsize=(max(len(unique_ids) * 0.8, 12),
