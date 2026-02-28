@@ -349,7 +349,7 @@ Kill (5, 10) Subset    :   7.114 (finalize) [     <████|          ]   8.
 The most impressive part of these results is how closely the **Subset** ablation matches the **Total Sign** ablation.
 
 * **Look at the last two lines:** Killing the "Pos Sign" dropped the value by **-0.946**, while killing just the "(5, 10) Subset" dropped it by **-0.959**.
-* **Translation:** You’ve identified the exact "circuit" or neurons responsible for that magnitude. The fact that the subset ablation is almost identical to the full sign ablation means you aren't just killing random noise; you've found the specific home of that numerical range.
+* **Translation:** The identification of the specific "circuit" or neurons responsible for that magnitude is now clear. Because the subset ablation yields results nearly identical to the full sign ablation, it indicates that this is not merely the suppression of random noise; rather, the specific home of that numerical range has been localized.
 
 ###### Consistency Across Magnitudes
 
@@ -357,7 +357,7 @@ The results show a logical scaling.
 
 * When the baseline values are large (e.g., **9.691** or **8.073**), the "Kill" effect is large (**-0.752** to **-0.959**).
 * When the baseline values are small (e.g., **-1.079**), the "Kill" effect is small (**+0.032**).
-* This suggests your ablation method is sensitive to the **saliency** of the features—it's not just breaking the model blindly.
+* This suggests the ablation method is sensitive to the **saliency** of the features—it's not just breaking the model blindly.
 
 ###### Clear Directionality
 
@@ -551,23 +551,23 @@ Actual Input: [10, 9, 7, 7, 1, 6, 7, 10, 1, 3], Expected Output: 8
 
 The most important test for any subset steering is: *Does steering to a specific magnitude range move the prediction toward that range?*
 
-* **Example (Target -10):** When you "Steer to Negative," the value drops to **-15.798**.
-* **Example (Target -1):** When you "Steer to Subset 0-5" (Small Negative), the shift is a massive **-12.23**, dragging the prediction deep into the negative territory.
-* **The Contrast:** Notice how "Steer to Subset 5-10" has a much smaller effect on the low-value inputs than the high-value ones. This shows your calibration (the $2.978$ scaling) is working to differentiate between "just being negative" and "being a specific kind of negative."
+* **Example (Target -10):** When we "Steer to Negative," the value drops to **-15.798**.
+* **Example (Target -1):** When we "Steer to Subset 0-5" (Small Negative), the shift is a massive **-12.23**, dragging the prediction deep into the negative territory.
+* **The Contrast:** Notice how "Steer to Subset 5-10" has a much smaller effect on the low-value inputs than the high-value ones. This shows our calibration (the $2.978$ scaling) is working to differentiate between "just being negative" and "being a specific kind of negative."
 
 ###### Successful "Flipping" (The Counterfactual Test)
 
-A "good" result in mechanistic interpretability is often defined by whether you can make the model "hallucinate" the opposite sign.
+A "good" result in mechanistic interpretability is often defined by whether one can make the model "hallucinate" the opposite sign.
 
-* **Target -6 (Negative):** By "Steering to Positive," you moved the prediction from **-5.803** to **+2.667**.
-* **Target 1 (Positive):** By "Steering to Negative," you moved it from **+0.999** to **-6.798**.
-* **Significance:** You aren't just nudging the model; you are successfully crossing the zero-threshold. This confirms those features are the primary drivers of the sign bit.
+* **Target -6 (Negative):** By "Steering to Positive," we moved the prediction from **-5.803** to **+2.667**.
+* **Target 1 (Positive):** By "Steering to Negative," we moved it from **+0.999** to **-6.798**.
+* **Significance:** We aren't just nudging the model; we are successfully crossing the zero-threshold. This confirms those features are the primary drivers of the sign bit.
 
 ###### The "NEG + SML" (Negative + Small) Explosion
 
-You might notice that "Flipped: NEG + SML" often results in huge shifts (e.g., **-39.573** or **-30.627**).
+One might notice that "Flipped: NEG + SML" often results in huge shifts (e.g., **-39.573** or **-30.627**).
 
-* **Why this is "Good":** This usually suggests that the "Small" and "Negative" features are highly concentrated or have high activation density. When you amplify them ("flip" them), you are likely saturating the model's output. It shows these features are incredibly "potent" within the model's latent space.
+* **Why this is "Good":** This usually suggests that the "Small" and "Negative" features are highly concentrated or have high activation density. When we amplify them ("flip" them), it is likely saturating the model's output. It shows these features are incredibly "potent" within the model's latent space.
 
 ###### Meaningful Sub-Distinctions
 
@@ -575,7 +575,7 @@ Look at the **Target 8** (Positive, Subset 5-10) block:
 
 * **Steer to Negative:** Prediction goes to **2.352**.
 * **Steer to Subset 0-5:** Prediction goes to **-0.244**.
-* **Observation:** Steering to the "0-5" (Small) subset actually pushed the model further toward the negative/zero than a general "Negative" steer did. This suggests your "Subset 0-5" feature set is capturing a very specific "reduction" logic that the model uses to keep values low.
+* **Observation:** Steering to the "0-5" (Small) subset actually pushed the model further toward the negative/zero than a general "Negative" steer did. This suggests our "Subset 0-5" feature set is capturing a very specific "reduction" logic that the model uses to keep values low.
 
 ##### Alpha Sweep Compliance against OOD Datasets
 
@@ -637,16 +637,16 @@ Look at the **Target 8** (Positive, Subset 5-10) block:
 
 ###### The "Extrapolation" Paradox (The Biggest Win)
 
-Usually, models break when they see Out-of-Distribution (OOD) data. Your results show the opposite:
+Usually, models break when they see Out-of-Distribution (OOD) data. Our results show the opposite:
 
 * **Subset Flip Success (91.50%)** and **Sign Flip Success (35.60%)** are much higher in Extrapolation than in Interpolation (52.1% and 25%).
-* **Interpretation:** This suggests that as values get larger or move outside the training range, the model relies **more** on these specific "Sign" and "Magnitude" directions and less on specific memorized quirks of the data. Your features are "cleaner" in the extrapolation regime.
+* **Interpretation:** This suggests that as values get larger or move outside the training range, the model relies **more** on these specific "Sign" and "Magnitude" directions and less on specific memorized quirks of the data. Our features are "cleaner" in the extrapolation regime.
 
 ###### Scaling Test (Perfect Control)
 
 * **Subset Flip Success: 100.00%**
 * **Sign Flip Success: 75.00%**
-* **Interpretation:** This is your "gold standard." When the model is dealing with simple scaling, your steering vectors have total authority. A 100% success rate on subset flipping is rare in mechanistic interpretability—it means you have perfectly isolated the magnitude neurons.
+* **Interpretation:** This is the "gold standard." When the model is dealing with simple scaling, our steering vectors have total authority. A 100% success rate on subset flipping is rare in mechanistic interpretability—it means we have perfectly isolated the magnitude neurons.
 
 ###### Precision vs. Interpolation (The "Hard" Cases)
 
@@ -674,18 +674,18 @@ The lower success rates in **Interpolation (25%)** and **Precision (24.6%)** for
 
 ###### The "Sign" vs. "Subset" Trade-off
 
-There is a clear **inverse relationship** between sign accuracy and subset accuracy as you increase Alpha:
+There is a clear **inverse relationship** between sign accuracy and subset accuracy as alpha gets increased:
 
 * **Sign Accuracy** starts low and **explodes** at very high Alphas (512.0+).
 * **Subset Accuracy** starts high and **collapses** at high Alphas (512.0+).
 
-**The Verdict:** Your "Sign" feature is much "stiffer" or more deeply embedded than your "Subset" feature. To force the model to flip a sign, you have to apply a massive amount of pressure (Alpha > 128), but doing so essentially **obliterates** the model's ability to maintain magnitude precision (the Subset Accuracy drops from ~52% to ~27%).
+**The Verdict:** Our "Sign" feature is much "stiffer" or more deeply embedded than our "Subset" feature. To force the model to flip a sign, we have to apply a massive amount of pressure (Alpha > 128), but doing so essentially **obliterates** the model's ability to maintain magnitude precision (the Subset Accuracy drops from ~52% to ~27%).
 
 ###### The "Scaling" Anchor
 
-The **Scaling** dataset is your most robust result. It stays flat at **75% (Sign)** and **100% (Subset)** across the entire sweep.
+The **Scaling** dataset is our most robust result. It stays flat at **75% (Sign)** and **100% (Subset)** across the entire sweep.
 
-* **Why this is good:** This proves that for the simplest version of this task, your steering vectors are perfectly aligned. The fact that it doesn't degrade even at Alpha 1024.0 means the "Scaling" logic is perfectly linear and isolated in the model's latent space.
+* **Why this is good:** This proves that for the simplest version of this task, our steering vectors are perfectly aligned. The fact that it doesn't degrade even at Alpha 1024.0 means the "Scaling" logic is perfectly linear and isolated in the model's latent space.
 
 ###### Extrapolation is the "Goldilocks" Zone
 
@@ -702,8 +702,8 @@ Extrapolation performs significantly better than Interpolation until the very en
 | Dataset | Peak Total Acc | Behavior |
 | --- | --- | --- |
 | **Interpolation** | **27.5%** (@1024) | Very resistant. Requires "brute force" steering to see any sign change. |
-| **Extrapolation** | **53.6%** (@512) | Highly steerable. This is where your features are most "causal." |
-| **Scaling** | **75.0%** (Flat) | Pure linear behavior. You've perfectly captured this circuit. |
+| **Extrapolation** | **53.6%** (@512) | Highly steerable. This is where our features are most "causal." |
+| **Scaling** | **75.0%** (Flat) | Pure linear behavior. We've perfectly captured this circuit. |
 | **Precision** | **29.3%** (@1024) | Like Interpolation, shows that "fine-grained" data resists broad steering vectors. |
 
 
