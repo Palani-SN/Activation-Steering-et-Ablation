@@ -47,8 +47,8 @@ def plot_elegant_dual_compass(file_path="temp/steering_basis.pt"):
         return
 
     data = torch.load(file_path, map_location='cpu')
-    # v_parity now represents subset (0-5 vs 5-10)
-    v_sign, v_subset = data["v_sign"], data["v_parity"]
+    # v_subset now represents subset (0-5 vs 5-10)
+    v_sign, v_subset = data["v_sign"], data["v_subset"]
 
     # 1. Coordinate Setup
     vectors = torch.stack([v_sign, -v_sign, v_subset, -v_subset]).cpu().numpy()

@@ -5,7 +5,7 @@ This folder contains all automatically generated visualization outputs from the 
 ## Image Files
 
 ### Steering Basis Visualization
-- **concept_compass.png** - Geometric visualization of steering basis vectors (v_sign, v_parity) and their orthogonality in 2D PCA space
+- **concept_compass.png** - Geometric visualization of steering basis vectors (v_sign, v_subset) and their orthogonality in 2D PCA space
 
 ### Performance Metrics
 - **heatmap_Interpolation.png** - Steering success rates for in-distribution data
@@ -17,8 +17,8 @@ This folder contains all automatically generated visualization outputs from the 
 ### Causal Attribution Analysis
 - **logit_lens_Distinct_Positive_Sign.png** - Causal impact of positive sign features on final output
 - **logit_lens_Distinct_Negative_Sign.png** - Causal impact of negative sign features on final output
-- **logit_lens_Distinct_Odd_Parity.png** - Causal impact of odd parity features on final output
-- **logit_lens_Distinct_Even_Parity.png** - Causal impact of even parity features on final output
+- **logit_lens_Distinct_Odd_subset.png** - Causal impact of odd subset features on final output
+- **logit_lens_Distinct_Even_subset.png** - Causal impact of even subset features on final output
 
 ## Generation
 

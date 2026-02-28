@@ -22,7 +22,7 @@ echo.
 
 echo [2/8] ^> Generating Dataset...
 cd dataset
-python data_generator.py || (echo [FAIL] Data generation failed & exit /b 1)
+@REM python data_generator.py || (echo [FAIL] Data generation failed & exit /b 1)
 echo [OK] All datasets generated
 cd ..
 echo.

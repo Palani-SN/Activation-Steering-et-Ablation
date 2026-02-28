@@ -6,7 +6,7 @@
 [![Model: Top-K SAE](https://img.shields.io/badge/Architecture-Top--K%20SAE-blue.svg)](#)
 
 ## Abstract
-This study investigates the causal structure of a neural network trained on multi-objective logical regression. By utilizing **Sparse Autoencoders (SAE)**, we successfully decompose polysemantic activations into monosemantic latent features. We demonstrate that high-level abstract concepts—specifically **Sign** and **Parity**—are represented as linear directions in latent space. Through **Activation Steering** and **Surgical Ablation**, we prove the causality of these features, achieving near-perfect model control across Out-of-Distribution (OOD) datasets.
+This study investigates the causal structure of a neural network trained on multi-objective logical regression. By utilizing **Sparse Autoencoders (SAE)**, we successfully decompose polysemantic activations into monosemantic latent features. We demonstrate that high-level abstract concepts—specifically **Sign** and **subset**—are represented as linear directions in latent space. Through **Activation Steering** and **Surgical Ablation**, we prove the causality of these features, achieving near-perfect model control across Out-of-Distribution (OOD) datasets.
 
 ---
 
@@ -15,7 +15,7 @@ Deep learning models often exhibit "polysemanticity," where individual neurons r
 
 ### 1.1 Model Architecture
 Our subject is a 3-layer MLP (`InterpretabilityMLP`) with a 512-dimensional expansion layer. 
-* **Target Task:** Predicting a scalar value based on the sign (Positive/Negative) and parity (Even/Odd) of a 10-dimensional input vector.
+* **Target Task:** Predicting a scalar value based on the sign (Positive/Negative) and subset (Even/Odd) of a 10-dimensional input vector.
 * **The Bottleneck:** We focus our analysis on `hidden2` (256-dim), the final hidden representation before the output logit.
 
 ---
@@ -30,7 +30,7 @@ To map the 256-dimensional activation space into an over-complete 2048-dimension
 ### 2.2 Steering Basis Extraction
 We extract "Concept Vectors" by calculating the mean difference in SAE latent space for balanced classes:
 $$\vec{v}_{sign} = \mathbb{E}[f_{pos}] - \mathbb{E}[f_{neg}]$$
-$$\vec{v}_{parity} = \mathbb{E}[f_{odd}] - \mathbb{E}[f_{even}]$$
+$$\vec{v}_{subset} = \mathbb{E}[f_{odd}] - \mathbb{E}[f_{even}]$$
 These vectors serve as the "steering wheels" for the model's internal logic.
 
 ---
@@ -266,7 +266,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
 ======================================================================
   STEERING BASIS VECTORS ANALYSIS
 ======================================================================
-  Sign-Parity Cosine Similarity: -0.0653
+  Sign-subset Cosine Similarity: -0.0653
   Interpretation: Near 0.0 → concepts are perfectly disentangled ✓
 ======================================================================
 
@@ -291,14 +291,14 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   IDENTIFIED FEATURE SUBSETS (INTERSECTIONS)
 ======================================================================
   Positive Sign Features : [112, 164, 174, 213, 220, 250, 276, 308, 321, 322, 373, 456, 471, 550, 554, 563, 668, 671, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1317, 1405, 1412, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1691, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
-  Odd Parity Features    : [112, 164, 174, 213, 220, 250, 276, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 684, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
+  Odd subset Features    : [112, 164, 174, 213, 220, 250, 276, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 684, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
   Negative Sign Features : [112, 164, 174, 213, 220, 250, 308, 321, 322, 373, 456, 471, 550, 554, 563, 663, 671, 684, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1423, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2023, 2041]
-  Even Parity Features   : [112, 164, 174, 213, 220, 250, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1423, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1691, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
+  Even subset Features   : [112, 164, 174, 213, 220, 250, 308, 321, 322, 373, 456, 471, 550, 554, 563, 671, 697, 755, 788, 914, 917, 935, 956, 979, 983, 1002, 1020, 1035, 1114, 1122, 1144, 1150, 1163, 1260, 1264, 1277, 1284, 1297, 1405, 1412, 1423, 1486, 1511, 1519, 1546, 1555, 1568, 1652, 1661, 1674, 1691, 1694, 1705, 1720, 1839, 1905, 1911, 1959, 1988, 2041]
 
   DISTINCT (Non-Common) Features:
-    → Even Parity        : [1423, 1691]
+    → Even subset        : [1423, 1691]
     → Positive Sign      : [276, 668, 1317, 1691]
-    → Odd Parity        : [276, 684]
+    → Odd subset        : [276, 684]
     → Negative Sign      : [663, 684, 1423, 2023]
 
   [OK] Successfully saved 14 feature groups
@@ -313,7 +313,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   Causal Shift    :  +0.5669
 
 ----------------------------------------------------------------------
-  [*] ABLATION TEST: Killing Odd Parity
+  [*] ABLATION TEST: Killing Odd subset
 ----------------------------------------------------------------------
   Original Output :  -2.9554
   Ablated Output  :  -2.6826
@@ -327,7 +327,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   Causal Shift    :  +0.4015
 
 ----------------------------------------------------------------------
-  [*] ABLATION TEST: Killing Even Parity
+  [*] ABLATION TEST: Killing Even subset
 ----------------------------------------------------------------------
   Original Output :  -1.9418
   Ablated Output  :  -1.8394
@@ -341,7 +341,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   Causal Shift    :  +0.7832
 
 ----------------------------------------------------------------------
-  [*] ABLATION TEST: Killing Odd Parity
+  [*] ABLATION TEST: Killing Odd subset
 ----------------------------------------------------------------------
   Original Output :  -1.2463
   Ablated Output  :  -0.8457
@@ -355,7 +355,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   Causal Shift    :  +0.1760
 
 ----------------------------------------------------------------------
-  [*] ABLATION TEST: Killing Odd Parity
+  [*] ABLATION TEST: Killing Odd subset
 ----------------------------------------------------------------------
   Original Output :   1.0493
   Ablated Output  :   1.3480
@@ -369,7 +369,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   Causal Shift    :  -0.0583
 
 ----------------------------------------------------------------------
-  [*] ABLATION TEST: Killing Even Parity
+  [*] ABLATION TEST: Killing Even subset
 ----------------------------------------------------------------------
   Original Output :   2.0447
   Ablated Output  :   2.0002
@@ -383,7 +383,7 @@ C:\Workspace\Git_Repos\Activation-Steering-et-Ablation\mlp-exp>workflow.bat
   Causal Shift    :  -0.4086
 
 ----------------------------------------------------------------------
-  [*] ABLATION TEST: Killing Odd Parity
+  [*] ABLATION TEST: Killing Odd subset
 ----------------------------------------------------------------------
   Original Output :   2.9848
   Ablated Output  :   2.9277
@@ -469,7 +469,7 @@ Predicted Output: 3.0288503170013428
 ======================================================================
 
   -> Calibrating feature scales using dataset/interp_test.xlsx...
-  [OK] Calibration: Sign_std=180.1455, Parity_std=23.6596
+  [OK] Calibration: Sign_std=180.1455, subset_std=23.6596
   1. Testing Interpolation (In-Distribution)...
   → Validating 1000 samples from interp_test...
 
@@ -477,7 +477,7 @@ Predicted Output: 3.0288503170013428
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
   [OK] Sign Flip Success   :   0.00%
-  [OK] Parity Flip Success :   0.50%
+  [OK] subset Flip Success :   0.50%
   [OK] Full Quadrant Flip  :   0.00%
 ======================================================================
 
@@ -488,7 +488,7 @@ Predicted Output: 3.0288503170013428
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
   [OK] Sign Flip Success   :  21.30%
-  [OK] Parity Flip Success :  49.70%
+  [OK] subset Flip Success :  49.70%
   [OK] Full Quadrant Flip  :  11.10%
 ======================================================================
 
@@ -499,7 +499,7 @@ Predicted Output: 3.0288503170013428
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
   [OK] Sign Flip Success   :  50.70%
-  [OK] Parity Flip Success :  49.80%
+  [OK] subset Flip Success :  49.80%
   [OK] Full Quadrant Flip  :  23.90%
 ======================================================================
 
@@ -510,7 +510,7 @@ Predicted Output: 3.0288503170013428
   STEERING SUCCESS RATES (Alpha = 2.00)
 ======================================================================
   [OK] Sign Flip Success   :   1.20%
-  [OK] Parity Flip Success :  12.20%
+  [OK] subset Flip Success :  12.20%
   [OK] Full Quadrant Flip  :   0.00%
 ======================================================================
 
@@ -541,7 +541,7 @@ sign_acc
 | Extrapolation |  21.2 |  21.2 |  21.3 |  21.3 |  21.3 |  21.5 |   22.1 |   22.4 |   23.6 |   28.7 |    32.5 |    36.8 |    54.5 |    81.5 |     99.4 |
 | Scaling       |  50.7 |  50.7 |  50.7 |  50.7 |  50.7 |  50.7 |   50.7 |   50.7 |   50.7 |   50.9 |    50.9 |    51   |    51.8 |    53.5 |     56.8 |
 | Precision     |   1.1 |   1.2 |   1.2 |   1.2 |   1.5 |   2.9 |    4.2 |    5.4 |    8.1 |   16.1 |    26.1 |    33.2 |    59.5 |    91.6 |    100   |
-parity_acc
+subset_acc
 | dataset       |   0.0 |   0.5 |   1.0 |   2.0 |   4.0 |   8.0 |   16.0 |   20.0 |   32.0 |   64.0 |   100.0 |   128.0 |   256.0 |   512.0 |   1024.0 |
 |:--------------|------:|------:|------:|------:|------:|------:|-------:|-------:|-------:|-------:|--------:|--------:|--------:|--------:|---------:|
 | Interpolation |   0.5 |   0.5 |   0.5 |   0.5 |   0.5 |   0.6 |    0.9 |    0.7 |    1.7 |    7.9 |    21.3 |    31.9 |    50   |    46.5 |     48.1 |
@@ -624,7 +624,7 @@ This README provides a highly detailed, file-referenced guide to the pipeline, r
 
 ### 7.5. Feature Probing & Steering Basis Extraction
 - **[feature_probe.py](feature_probe.py):**
-	- `get_universal_vectors()` computes steering basis vectors (v_sign, v_parity) by averaging SAE latents across concept groups.
+	- `get_universal_vectors()` computes steering basis vectors (v_sign, v_subset) by averaging SAE latents across concept groups.
 	- `UniversalSteeringController` class loads MLP, SAE, and steering basis, and implements `steer_input()` for causal interventions in latent space.
 	- `run_surgical_ablation()` performs targeted ablation, logs baseline and shifted outputs, and quantifies causal impact.
 	- `get_top_k_features_by_group()` analyzes feature activations by group, supporting interpretability.
@@ -680,7 +680,7 @@ This pipeline is designed for maximum scientific rigor and reproducibility:
 [![Model: Top-K SAE](https://img.shields.io/badge/Architecture-Top--K%20SAE-blue.svg)](#)
 
 ## Abstract
-This study investigates the linear representation of logical primitives (Sign and Parity) within a controlled MLP environment. Utilizing a **Top-K Sparse Autoencoder (SAE)**, we decompose activations at the `hidden2` bottleneck to identify monosemantic latent features. While we demonstrate robust causal control over **Sign** logic, we uncover critical failure modes in **Parity steering** and **Magnitude Scaling**. These findings highlight the geometric imbalance of feature representations and the limitations of linear interventions in OOD (Out-of-Distribution) regimes.
+This study investigates the linear representation of logical primitives (Sign and subset) within a controlled MLP environment. Utilizing a **Top-K Sparse Autoencoder (SAE)**, we decompose activations at the `hidden2` bottleneck to identify monosemantic latent features. While we demonstrate robust causal control over **Sign** logic, we uncover critical failure modes in **subset steering** and **Magnitude Scaling**. These findings highlight the geometric imbalance of feature representations and the limitations of linear interventions in OOD (Out-of-Distribution) regimes.
 
 ---
 
@@ -700,13 +700,13 @@ To combat polysemanticity, we employ a Top-K SAE ($N=2048, K=128$). By enforcing
 The Unified Logit-Lens (Figure 1) projects the SAE decoder weights directly onto the final output weights. This reveals the "Causal Push" of each feature.
 
 ![Logit Lens](images/unified_logit_lens.png)
-*Figure 1: Unified Logit-Lens. While Sign features (Red/Blue clusters) show high-magnitude causal attribution, Parity features exhibit significantly lower attribution norms.*
+*Figure 1: Unified Logit-Lens. While Sign features (Red/Blue clusters) show high-magnitude causal attribution, subset features exhibit significantly lower attribution norms.*
 
 ### 2.2 Successes and Mechanistic Failures
 
-#### A. The Parity Steering Paradox (Technical Limitation)
-**Finding:** At $\alpha=2.0$, Sign steering achieves $>95\%$ compliance, while Parity steering drops to near **0%**. 
-**Hypothesis:** This is an instance of **Feature Magnitude Dominance**. Our analysis suggests that the model’s "Sign" subspace has a significantly higher norm than the "Parity" subspace. In a linear intervention, the steering vector for Parity is insufficient to overcome the high-magnitude bias already present in the original activation, effectively being "drowned out" by the model's primary classification feature.
+#### A. The subset Steering Paradox (Technical Limitation)
+**Finding:** At $\alpha=2.0$, Sign steering achieves $>95\%$ compliance, while subset steering drops to near **0%**. 
+**Hypothesis:** This is an instance of **Feature Magnitude Dominance**. Our analysis suggests that the model’s "Sign" subspace has a significantly higher norm than the "subset" subspace. In a linear intervention, the steering vector for subset is insufficient to overcome the high-magnitude bias already present in the original activation, effectively being "drowned out" by the model's primary classification feature.
 
 #### B. Scaling Collapse: The 50% Baseline
 **Finding:** On the **Scaling Dataset** (magnitude-shifted inputs), steering success plateaus at exactly 50% regardless of $\alpha$.
@@ -717,7 +717,7 @@ The Unified Logit-Lens (Figure 1) projects the SAE decoder weights directly onto
 ## 3. Statistical Rigor & Baselines
 To validate that our steering directions are meaningful, we compared our SAE-derived vectors against a **Random Direction Baseline**.
 * **Random Direction Steering:** Resulted in $0\%$ logic flip and high reconstruction error.
-* **SAE Direction:** Resulted in targeted logic flips (Sign) or identifiable neutralizations (Parity), confirming that the SAE has isolated specific causal paths, even where they are too weak to fully steer the model.
+* **SAE Direction:** Resulted in targeted logic flips (Sign) or identifiable neutralizations (subset), confirming that the SAE has isolated specific causal paths, even where they are too weak to fully steer the model.
 
 ---
 
@@ -728,7 +728,7 @@ While these results demonstrate the "Linear Representation Hypothesis" in a cont
 
 ### 4.2 Potential Project Improvements
 To move this research toward a peer-reviewed standard, the following steps are prioritized:
-1. **Iterative Alpha Scaling:** Dynamically adjusting $\alpha$ based on the input activation norm to solve the Parity failure.
+1. **Iterative Alpha Scaling:** Dynamically adjusting $\alpha$ based on the input activation norm to solve the subset failure.
 2. **Cross-Seed Validation:** Running the pipeline across 5 random seeds to provide mean accuracy and standard deviation ($\sigma$) for all steering tasks.
 3. **Contrastive Baselines:** Comparing Top-K SAE results against PCA-based steering to quantify the gain in monosemanticity provided by sparse dictionaries.
 

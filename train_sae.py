@@ -7,6 +7,10 @@ from sae.sae_definition import SparseAutoencoder
 
 def train_sae_from_payload(payload_path, epochs=100):
 
+    input_dim = 256
+    dict_size = 2048
+    k = 128
+
     mse = []
 
     # Load the dictionary saved by the harvester
@@ -16,15 +20,15 @@ def train_sae_from_payload(payload_path, epochs=100):
     loader = DataLoader(TensorDataset(activations),
                         batch_size=128, shuffle=True)
 
-    sae = SparseAutoencoder(input_dim=256, dict_size=2048).cuda()
+    sae = SparseAutoencoder(input_dim=input_dim, dict_size=dict_size).cuda()
     optimizer = optim.Adam(sae.parameters(), lr=1e-3)
 
     print("\n" + "="*80)
     print("  PHASE II: TRAINING SPARSE AUTOENCODER (SAE)")
     print("="*80)
-    print("  Input Dimension: 512")
-    print("  Dictionary Size: 2048")
-    print(f"  Sparsity (k): {128}")
+    print(f"  Input Dimension: {input_dim}")
+    print(f"  Dictionary Size: {dict_size}")
+    print(f"  Sparsity (k): {k}")
     print(f"  Total Epochs: {epochs}")
     print("  Batch Size: 128")
     print("="*80 + "\n")

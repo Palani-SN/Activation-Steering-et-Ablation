@@ -260,28 +260,28 @@ class UniversalSteeringController:
         # 3. Load Steering Basis
         basis = torch.load(basis_path, map_location=self.device)
         v_sign = basis['v_sign']
-        v_parity = basis['v_parity']
+        v_subset = basis['v_subset']
 
         # 4. Feature Normalization Logic
         if latent_stats_path:
             stats = torch.load(latent_stats_path)
             std_sign = stats.get('sign_std', 1.0)
-            std_parity = stats.get('parity_std', 1.0)
+            std_subset = stats.get('subset_std', 1.0)
         else:
             std_sign = 1.0
-            std_parity = 0.25
+            std_subset = 0.25
 
         # Initial normalization
         norm_v_sign = v_sign / (std_sign + 1e-8)
-        norm_v_parity = v_parity / (std_parity + 1e-8)
+        norm_v_subset = v_subset / (std_subset + 1e-8)
 
         # --- Empirical calibration for output effect ---
-        # Use a batch of calibration samples to match the output effect of sign and parity steering
+        # Use a batch of calibration samples to match the output effect of sign and subset steering
         try:
             import pandas as pd
             df = pd.read_excel(calibration_excel_path).head(100)
             sign_effects = []
-            parity_effects = []
+            subset_effects = []
             with torch.no_grad():
                 for _, row in df.iterrows():
                     input_data = torch.tensor(
@@ -296,33 +296,33 @@ class UniversalSteeringController:
                         steered_latents_sign)
                     out_sign = self.mlp.layers['output'](
                         self.mlp.relu(steered_neurons_sign)).item()
-                    # Steer parity
-                    steered_latents_parity = latents + norm_v_parity
-                    steered_neurons_parity = self.sae.decoder(
-                        steered_latents_parity)
-                    out_parity = self.mlp.layers['output'](
-                        self.mlp.relu(steered_neurons_parity)).item()
+                    # Steer subset
+                    steered_latents_subset = latents + norm_v_subset
+                    steered_neurons_subset = self.sae.decoder(
+                        steered_latents_subset)
+                    out_subset = self.mlp.layers['output'](
+                        self.mlp.relu(steered_neurons_subset)).item()
                     # Baseline output
                     out_base = self.mlp.layers['output'](
                         self.mlp.relu(raw_neurons)).item()
                     sign_effects.append(abs(out_sign - out_base))
-                    parity_effects.append(abs(out_parity - out_base))
+                    subset_effects.append(abs(out_subset - out_base))
             mean_sign = sum(sign_effects) / (len(sign_effects) + 1e-8)
-            mean_parity = sum(parity_effects) / (len(parity_effects) + 1e-8)
-            # Compute scaling factor for parity
-            parity_scale = mean_sign / \
-                (mean_parity + 1e-8) if mean_parity > 0 else 1.0
+            mean_subset = sum(subset_effects) / (len(subset_effects) + 1e-8)
+            # Compute scaling factor for subset
+            subset_scale = mean_sign / \
+                (mean_subset + 1e-8) if mean_subset > 0 else 1.0
             self.norm_v_sign = norm_v_sign
-            self.norm_v_parity = norm_v_parity * parity_scale
+            self.norm_v_subset = norm_v_subset * subset_scale
             print(
-                f"[Calibration] Parity steering scaled by {parity_scale:.3f} to match sign effect.")
+                f"[Calibration] Subset steering scaled by {subset_scale:.3f} to match sign effect.")
         except Exception as e:
             # Fallback: no scaling
             self.norm_v_sign = norm_v_sign
-            self.norm_v_parity = norm_v_parity
-            print(f"[Calibration] Parity scaling skipped due to error: {e}")
+            self.norm_v_subset = norm_v_subset
+            print(f"[Calibration] subset scaling skipped due to error: {e}")
 
-    def steer_input(self, input_tensor, target_sign=0, target_parity=0, alpha=2.0):
+    def steer_input(self, input_tensor, target_sign=0, target_subset=0, alpha=2.0):
         with torch.no_grad():
             # 1. Forward pass to injection site
             _ = self.mlp(input_tensor.to(self.device))
@@ -334,7 +334,7 @@ class UniversalSteeringController:
             # 3. Apply Steering using the correctly named normalized vectors
             steered_latents = baseline_latents + \
                 (target_sign * alpha * self.norm_v_sign) + \
-                (target_parity * alpha * self.norm_v_parity)
+                (target_subset * alpha * self.norm_v_subset)
 
             # 4. Decode and finish MLP pass
             steered_neurons = self.sae.decoder(steered_latents)
@@ -431,22 +431,22 @@ def print_steering_dashboard(expected, predicted, interventions):
 if __name__ == "__main__":
 
     # 1. Extract Vectors
-    v_sign, v_parity = get_universal_vectors(
+    v_sign, v_subset = get_universal_vectors(
         "temp/harvested_data.pt", "sae/universal_sae.pth")
 
     # 2. Metric: Orthogonality Check
     cosine_sim = torch.nn.functional.cosine_similarity(
-        v_sign.unsqueeze(0), v_parity.unsqueeze(0)
+        v_sign.unsqueeze(0), v_subset.unsqueeze(0)
     )
 
     print("\n" + "="*85)
     print("  STEERING BASIS VECTORS ANALYSIS")
     print("="*85)
-    print(f"  Sign-Parity Cosine Similarity: {cosine_sim.item():.4f}")
+    print(f"  Sign-subset Cosine Similarity: {cosine_sim.item():.4f}")
     print("  Interpretation: Near 0.0 → concepts are perfectly disentangled ✓")
     print("="*85 + "\n")
 
-    torch.save({"v_sign": v_sign, "v_parity": v_parity}, "temp/steering_basis.pt")
+    torch.save({"v_sign": v_sign, "v_subset": v_subset}, "temp/steering_basis.pt")
 
     # 3. PCA Baseline Extraction
     print("\n" + "="*85)
@@ -496,7 +496,7 @@ if __name__ == "__main__":
 
             # SAE steering (sign)
             sae_out = sae_controller.steer_input(
-                input_data, target_sign=target_s, target_parity=0, alpha=alpha)
+                input_data, target_sign=target_s, target_subset=0, alpha=alpha)
             sae_sign_success += int((target_s == 1 and sae_out > 0)
                                     or (target_s == -1 and sae_out < 0))
             # PCA steering (sign)
@@ -507,7 +507,7 @@ if __name__ == "__main__":
 
             # SAE steering (subset)
             sae_out_subset = sae_controller.steer_input(
-                input_data, target_sign=0, target_parity=target_subset, alpha=alpha)
+                input_data, target_sign=0, target_subset=target_subset, alpha=alpha)
             sae_subset_success += int((target_subset == 1 and abs(sae_out_subset) > 5)
                                       or (target_subset == -1 and 0 < abs(sae_out_subset) <= 5))
             # PCA steering (subset)
@@ -592,17 +592,17 @@ if __name__ == "__main__":
 
         interventions = {
 
-            "Flipped: POS + SML": controller.steer_input(input_tensor, target_sign=1, target_parity=1),
-            "Steer to Positive": controller.steer_input(input_tensor, target_sign=1, target_parity=0),
-            "Flipped: POS + LRG": controller.steer_input(input_tensor, target_sign=1, target_parity=-1),
+            "Flipped: POS + SML": controller.steer_input(input_tensor, target_sign=1, target_subset=1),
+            "Steer to Positive": controller.steer_input(input_tensor, target_sign=1, target_subset=0),
+            "Flipped: POS + LRG": controller.steer_input(input_tensor, target_sign=1, target_subset=-1),
 
-            "Steer to Subset 5-10": controller.steer_input(input_tensor, target_sign=0, target_parity=-1),
+            "Steer to Subset 5-10": controller.steer_input(input_tensor, target_sign=0, target_subset=-1),
 
-            "Flipped: NEG + LRG": controller.steer_input(input_tensor, target_sign=-1, target_parity=-1),
-            "Steer to Negative": controller.steer_input(input_tensor, target_sign=-1, target_parity=0),
-            "Flipped: NEG + SML": controller.steer_input(input_tensor, target_sign=-1, target_parity=1),
+            "Flipped: NEG + LRG": controller.steer_input(input_tensor, target_sign=-1, target_subset=-1),
+            "Steer to Negative": controller.steer_input(input_tensor, target_sign=-1, target_subset=0),
+            "Flipped: NEG + SML": controller.steer_input(input_tensor, target_sign=-1, target_subset=1),
 
-            "Steer to Subset 0-5": controller.steer_input(input_tensor, target_sign=0, target_parity=1),
+            "Steer to Subset 0-5": controller.steer_input(input_tensor, target_sign=0, target_subset=1),
 
         }
 

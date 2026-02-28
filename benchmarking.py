@@ -29,18 +29,18 @@ class SteeringValidator:
         # 3. Load Steering Basis
         basis = torch.load(basis_path, map_location=self.device)
         self.v_sign = basis['v_sign']
-        # v_parity now represents subset (0-5 vs 5-10)
-        self.v_subset = basis['v_parity']
+        # v_subset now represents subset (0-5 vs 5-10)
+        self.v_subset = basis['v_subset']
 
         # 4. FIX: Initialize latent_stds to None
         # This will be populated by the calibrate() method
         self.latent_stds = None
         self.norm_v_sign = None
-        self.norm_v_parity = None
+        self.norm_v_subset = None
 
     def calibrate(self, calibration_excel_path):
         """
-        Calculates the standard deviation of latent activations and empirically calibrates parity steering to match sign steering effect.
+        Calculates the standard deviation of latent activations and empirically calibrates subset steering to match sign steering effect.
         """
         print(
             f"  -> Calibrating feature scales using {calibration_excel_path}...")
