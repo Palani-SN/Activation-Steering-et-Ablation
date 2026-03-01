@@ -107,12 +107,12 @@ python -m pip install -r reqs.txt
 * **Causal Validation (`benchmarking.py`)**: Uses **Activation Steering** to verify the role of identified features. By injecting feature-basis vectors into the latent space, we can manually "force" the model to flip its output (e.g., changing a predicted -10 to a +1).
 * **Feature Reporting (`feature_reports.py`)**: Visualizes the **Concept Compass** and **Logit-Lens**, providing high-fidelity maps of how specific SAE features drive the final model output.
 
-![workflow](/images/workflow.png)
+![workflow](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/workflow.png?raw=true)
 *Figure 1: Scripts, Inventories & Visualization plots specified as per the order of Execution.*
 
 ### Execution Log
 
-- To check the complete Execution Log, [check here](/workflow.log)
+- To check the complete Execution Log, [check here](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/workflow.log)
 
 ### Execution Steps
 
@@ -183,7 +183,7 @@ Successfully saved precision_test.xlsx
 
 - We use dataset of 8k samples to train the mlp and save it to .pth file for later analysis.
 
-![mlp_training](/images/mlp_training.png)
+![mlp_training](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/mlp_training.png?raw=true)
 
 *Figure 2: MLP Trained to an Accuracy of MSE 0.034669.*
 
@@ -244,7 +244,7 @@ Successfully saved precision_test.xlsx
 
 - We will be training the SAE with the harvested Activations, to map the 256 neurons to top k (128+) features out of 2048 available sae features. 
 
-![sae_training](/images/sae_training.png)
+![sae_training](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/sae_training.png?raw=true)
 
 *Figure 3: SAE Trained to an Accuracy of MSE 0.006879.*
 
@@ -686,7 +686,7 @@ The lower success rates in **Interpolation (25%)** and **Precision (24.6%)** for
 
 - We have extended the alpha to 1024, to observe patterns, if any.
 
-![alpha-sweep-heatmap](/images/unified_logic_heatmap.png)
+![alpha-sweep-heatmap](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/unified_logic_heatmap.png?raw=true)
 *Figure 3: Heatmap shows OOD Dataset vs Alpha Sweep Compliance, interms of percentage that defines a transition.*
 
 ###### The "Sign" vs. "Subset" Trade-off
@@ -770,14 +770,14 @@ The pipeline generated a suite of visual reports to confirm the "Concept Geometr
 
 * ***The Steering Basis Compass***: Visualizes the geometric orientation of the Sign vs. Subset vectors. It confirms that "Positive" and "Negative" latents are represented as opposing directions in the hidden space.
 
-![concept-compass](/images/concept_compass_elegant.png)
+![concept-compass](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/concept_compass_elegant.png?raw=true)
 *Figure 4: Logic basis geometric disentanglement showing orthogonal sign and subset vectors. Cosine similarity = -0.02 validates perfect disentanglement.*
 
 - The above image shows the orthogonality of two vectors that namely represents Sign & Subset vectors, which is quantifiably verified using cosine similarity after training both MLP & SAE, for confirmation before starting the Ablation & Activation Steering experiments.
 
 * ***The Unified Logit-Lens***: Provides the definitive "Causal Map," showing exactly how **141 identified features** contribute to the final logit. This heatmap identifies which SAE features "push" the output toward specific arithmetic values.
 
-![logit-lens](/images/unified_logit_lens.png)
+![logit-lens](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/unified_logit_lens.png?raw=true)
 *Figure 5: Logit Map contains the logit distribution across 5 group of layers, which are listed below.*
 
 - Logits are distributed to different concept groups, in the order of y - axis.
@@ -790,7 +790,7 @@ The pipeline generated a suite of visual reports to confirm the "Concept Geometr
 
 * ***The Pareto Frontier***: Illustrates the trade-off total between Compliance and alpha against the 4 distinct OOD datasets, proving where the model captures maximum logic with minimum feature activation.
 
-![pareto-frontier](/images/unified_pareto_frontier.png)
+![pareto-frontier](https://github.com/Palani-SN/Activation-Steering-et-Ablation/blob/main/images/unified_pareto_frontier.png?raw=true)
 *Figure 6: Better Prediction performance on Extrapolation & Scaling dataset, portrays the models capability to generalize the logic, instead of mere memorization of the exact training dataset.*
 
 ### Conclusion
