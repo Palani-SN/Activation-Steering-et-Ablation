@@ -112,7 +112,7 @@ python -m pip install -r reqs.txt
 
 ### Execution Log
 
-- To check the complete Execution Log, [check here](/mlp-exp/workflow.log)
+- To check the complete Execution Log, [check here](/workflow.log)
 
 ### Execution Steps
 
@@ -286,7 +286,7 @@ Alpha Sweep Compliance (SAE vs PCA):
 =====================================================================================
 ```
 
-- this certainly proves that the sae model contains ground truth in the form of internal wiring, as it performs better than generic PCA Accouracy.
+- this certainly proves that the sae model contains ground truth, in the form of internal wiring, as it performs better than generic PCA Accuracy.
 
 ##### Top K Features Per Concept Group
 
@@ -307,6 +307,8 @@ Alpha Sweep Compliance (SAE vs PCA):
 ```
 
 ##### Derivatives to find Distinct Features
+
+- We calculate top k distinct features, which essentially is **set(All Features per group) - set(Universal Common Features)**, to derive few distinct features from every group.
 
 ```log
 =====================================================================================
@@ -358,7 +360,7 @@ Kill (5, 10) Subset    :   7.114 (finalize) [     <████|          ]   8.
 =====================================================================================
 ```
 
-- we can clearly see a pattern between the concept groups & Causal Shifts, as shown below.
+- we can clearly see a pattern between the concept groups & Causal Shifts, as elaborated below.
 
 ###### High Specificity (The "Smoking Gun")
 
@@ -769,7 +771,7 @@ The pipeline generated a suite of visual reports to confirm the "Concept Geometr
 * ***The Steering Basis Compass***: Visualizes the geometric orientation of the Sign vs. Subset vectors. It confirms that "Positive" and "Negative" latents are represented as opposing directions in the hidden space.
 
 ![concept-compass](/images/concept_compass_elegant.png)
-*Figure 4: Logic basis geometric disentanglement showing orthogonal sign and magnitude vectors. Cosine similarity = -0.02 validates perfect disentanglement.*
+*Figure 4: Logic basis geometric disentanglement showing orthogonal sign and subset vectors. Cosine similarity = -0.02 validates perfect disentanglement.*
 
 - The above image shows the orthogonality of two vectors that namely represents Sign & Subset vectors, which is quantifiably verified using cosine similarity after training both MLP & SAE, for confirmation before starting the Ablation & Activation Steering experiments.
 
@@ -778,18 +780,18 @@ The pipeline generated a suite of visual reports to confirm the "Concept Geometr
 ![logit-lens](/images/unified_logit_lens.png)
 *Figure 5: Logit Map contains the logit distribution across 5 group of layers, which are listed below.*
 
-- Logits are distributed to different concept groups, in the order of x - axis.
+- Logits are distributed to different concept groups, in the order of y - axis.
 
   - ***Primitive four layers*** : { POS + SML }, { POS + LRG }, { NEG + SML }, { NEG + LRG } 
   - ***Derived Union Layer*** : { POS + SML } ∪ { POS + LRG } ∪ { NEG + SML } ∪ { NEG + LRG }
   - ***Primitive Distinct Layers*** : { POS }, { NEG }, { SML }, { LRG }
   - ***Derived Intersection Layer*** : { POS } ∩ { NEG } ∩ { SML } ∩ { LRG }
-  - ***Derived Distinct Layers*** : { POS } - { COM }, { NEG } - { COM }, { SML } - { COM }, { LRG } - { COM } ( COM - common feature set ) 
+  - ***Derived Distinct Layers*** : { POS } - { DIL }, { NEG } - { DIL }, { SML } - { DIL }, { LRG } - { DIL } ( DIL - Derived Intersection Layer ) 
 
 * ***The Pareto Frontier***: Illustrates the trade-off total between Compliance and alpha against the 4 distinct OOD datasets, proving where the model captures maximum logic with minimum feature activation.
 
 ![pareto-frontier](/images/unified_pareto_frontier.png)
-*Figure 6: Better Prediction performance on Extrapolation & Scaling dataset, portrays the models capability to generalize the logic, instead of mere memorization of just training dataset.*
+*Figure 6: Better Prediction performance on Extrapolation & Scaling dataset, portrays the models capability to generalize the logic, instead of mere memorization of the exact training dataset.*
 
 ### Conclusion
 
