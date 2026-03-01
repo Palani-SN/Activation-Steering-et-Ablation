@@ -823,12 +823,14 @@ Building on our methodology for decomposing and steering latent features, we pla
 
 ### References
 
-*Bricken, T., et al. (2023). Towards Monosemanticity: Decomposing Language Models with Dictionary Learning. Transformer Circuits Thread.*
+If you use this codebase for research, please cite the original paper that inspired this architecture:
 
-*Turner, A., et al. (2023). Activation Addition: Steering Language Models Without Optimization. arXiv:2308.10248.*
+***Bricken, T., et al. (2023). Towards Monosemanticity: Decomposing Language Models with Dictionary Learning. Transformer Circuits Thread.***
 
-*Meng, K., et al. (2022). Locating and Editing Factual Associations in GPT. NeurIPS, 35, 17359-17372.*
+***Turner, A., et al. (2023). Activation Addition: Steering Language Models Without Optimization. arXiv:2308.10248.***
 
-*Cunningham, H., et al. (2023). Sparse Autoencoders Find Highly Interpretable Features in Language Models. arXiv:2309.08600.*
+***Meng, K., et al. (2022). Locating and Editing Factual Associations in GPT. NeurIPS, 35, 17359-17372.***
 
-*Biderman, S., et al. (2023). Pythia: A Suite for Analyzing Large Language Models Across Training and Scaling. ICML.*
+***Cunningham, H., et al. (2023). Sparse Autoencoders Find Highly Interpretable Features in Language Models. arXiv:2309.08600.***
+
+***Biderman, S., et al. (2023). Pythia: A Suite for Analyzing Large Language Models Across Training and Scaling. ICML.***
