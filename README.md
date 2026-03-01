@@ -47,7 +47,7 @@ The generator produces several specialized splits to test the model's robustness
 
 ### Folder Structure
 
-- [Github](https://github.com/Palani-SN/Activation-Steering-et-Ablation)
+- [Article](https://palani-sn.github.io/ML2/ReadMe.html)
 
 ```txt
 Activation-Steering-et-Ablation/
